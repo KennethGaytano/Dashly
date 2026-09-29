@@ -77,14 +77,24 @@ button.note-card:hover {
 .note-color-pink { background: #f472b6; }
 
 /* Note composer */
+/* The form is a flex column so every group gets an even 12px rhythm. As a
+   plain block the groups stacked flush, and only inputs carried a margin --
+   which is what pulled the Link hint away from the field it describes. */
+.note-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
 .note-form input,
 .note-form textarea {
     width: 100%;
 }
 
+/* No margin-bottom here: .form-group's own 0.5rem gap already spaces this
+   from the .form-help paragraph, matching the tasks and calendar forms. */
 .note-form input {
     font-weight: 600;
-    margin-bottom: 0.75rem;
 }
 
 .note-form textarea {
@@ -92,8 +102,10 @@ button.note-card:hover {
     display: block;
 }
 
+/* margin-top reset: the form's flex gap already separates the action row,
+   and flex margins do not collapse the way block margins do. */
 .note-form-actions {
-    margin-top: 0.75rem;
+    margin-top: 0;
     display: flex;
     gap: 0.5rem;
 }
