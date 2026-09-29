@@ -27,6 +27,15 @@ https://kennethgaytano.github.io/Personal-Dashboard/
 
 Static HTML, CSS, and vanilla JavaScript. No framework, no build step, no backend. All data lives in the browser's `localStorage`, so it is per-device and does not sync.
 
+## Design & accessibility
+
+- **Dark theme** driven entirely by CSS custom properties in `base.css`, so the whole palette is defined in one place rather than sprinkled through the stylesheets.
+- **Staggered page-load reveal** — navigation is a full document load, so instead of a blank flash each page fades and rises into place, 50ms apart, 0.25s per block. Defined once in `layout.css` and applied to every page.
+- **`prefers-reduced-motion` honoured globally** — a single rule in `base.css` collapses every animation and transition to 0.01ms, so the reveal and all hover states disappear for anyone who has asked their OS for reduced motion. No per-feature opt-out needed.
+- **Keyboard support** — a skip link on every page, visible focus rings, focus trapping in the mobile nav drawer and the Goals delete modal, `Escape` to dismiss, and focus returned to the trigger on close.
+- **Semantics** — the active nav item carries `aria-current="page"`, toasts are `role="alert" aria-live="polite"`, and all dynamically rendered text is HTML-escaped before insertion.
+- **Custom scrollbar** tinted to the accent colour across the app.
+
 ## Data storage
 
 | Key | Contents |
@@ -47,6 +56,15 @@ To reset everything, clear site data for the origin in your browser.
 - `index.html` — home page and deployed entry point.
 - `pages/` — one HTML file per feature: `tasks`, `calendar`, `notes`, `progress`, `goals`.
 - `scripts/` — one module per page (`tasks.js`, `calendar.js` + `calendar-events.js`, `notes.js` + `quick-notes.js`, `progress.js`, `goals.js`, `home.js`, `pomodoro.js`), plus the shared `nav.js` and `link-utils.js`.
-- `styles/` — split stylesheets: `base.css` (tokens/reset), `layout.css` (sidebar and page scaffolding), `components.css` (buttons, forms, modal, toast), plus one file per page.
+- `styles/` — split stylesheets: `base.css` (design tokens, reset, reduced-motion), `layout.css` (sidebar, page scaffolding, and the page-load reveal), `components.css` (buttons, forms, modal, toast), plus one file per page.
 - `.claude/skills/run-personal-dashboard/` — local server, smoke test, and Playwright check scripts (`smoke.mjs`, `task-tests.mjs`, `goals-tests.mjs`, `progress-tests.mjs`, plus targeted checks).
+
+### Running the checks
+
+```bash
+cd .claude/skills/run-personal-dashboard
+node task-tests.mjs
+```
+
+Each script starts its own server and shuts it down afterwards, exiting non-zero on failure. They all bind port 3000, so **run them one at a time** — launching two in parallel makes the second fail with `ERR_CONNECTION_REFUSED`.
 
