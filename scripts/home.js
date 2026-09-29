@@ -107,14 +107,24 @@
   }
 
   /**
+   * The home page task list. The render and the checkbox listener must
+   * resolve the same element, so they share this lookup instead of querying
+   * separately and silently drifting apart.
+   */
+  function getHomeTaskList() {
+    return document.getElementById('homeTaskList') || document.querySelector('.task-list');
+  }
+
+  /**
    * Render today's tasks on the home page
    */
   function renderHomeTasks() {
     const tasks = getTasks();
-    const container = document.querySelector('.task-list');
+    const container = getHomeTaskList();
 
     if (!container) {
-      return; // Not on home page
+      console.error('Home task list container not found');
+      return;
     }
 
     // Include completed tasks in ranking so finished work stays visible
@@ -246,10 +256,10 @@
   }
 
   /**
-   * Toggle task status from home page
-   * Exported on window for the shared task page, but home.js binds its own
-   * delegated listener instead of an inline onchange, which a strict CSP
-   * would block.
+   * Toggle task status from the home page, then re-render so the overdue
+   * warning and the task count reflect the new status immediately.
+   * Reached through a delegated listener rather than an inline onchange,
+   * which a strict CSP would block.
    */
   function toggleHomeTask(taskId) {
     const tasks = getTasks();
@@ -273,10 +283,6 @@
       console.error('Error updating task:', error);
     }
   }
-
-  // The task page still calls this through an inline handler, so keep it
-  // reachable there.
-  window.toggleHomeTask = toggleHomeTask;
 
   /**
    * Greet the user according to the time of day
@@ -336,10 +342,14 @@
     scheduleTaskStateRefresh();
 
     // Delegate checkbox changes instead of inline onchange (fixes CSP / a11y).
-    document.getElementById('homeTaskList')?.addEventListener('change', e => {
-      const cb = e.target.closest('input[type="checkbox"][data-task-id]');
-      if (cb) toggleHomeTask(cb.getAttribute('data-task-id'));
-    });
+    // Bound to the container so it survives the innerHTML re-renders.
+    const taskList = getHomeTaskList();
+    if (taskList) {
+      taskList.addEventListener('change', e => {
+        const cb = e.target.closest('input[type="checkbox"][data-task-id]');
+        if (cb) toggleHomeTask(cb.getAttribute('data-task-id'));
+      });
+    }
 
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) {
