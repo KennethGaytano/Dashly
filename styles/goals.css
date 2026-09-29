@@ -44,6 +44,14 @@
     font-weight: 600;
 }
 
+/* Badge sits with the edit/delete controls so the header reads as one row */
+.goal-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+
 .goal-badge {
     font-size: 0.7rem;
     font-weight: 600;
@@ -113,4 +121,18 @@
 
 .milestone.done .milestone-check::after {
     content: '✓';
+}
+
+/* ===== Milestone Editor (in the goal form) ===== */
+/* The text input fills the row, so it lines up with the title field above it */
+.milestone-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.milestone-row input[type="text"] {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
 }

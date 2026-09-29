@@ -10,6 +10,26 @@
   let mode = 'focus'; // 'focus' | 'break'
 
   const DURATIONS = { focus: 25 * 60, break: 5 * 60 };
+  const SESSION_KEY = 'dashboard_pomodoro_sessions';
+  let sessionLogged = false;
+  let sessionStartedAt = null;
+
+  function saveSessions(sessions) { try { localStorage.setItem(SESSION_KEY, JSON.stringify(sessions)); } catch { /* ignore */ } }
+  function getSessions() { try { const r = localStorage.getItem(SESSION_KEY); return r ? JSON.parse(r) : []; } catch { return []; } }
+
+  function logFocusSession() {
+    if (sessionLogged) return;
+    const started = sessionStartedAt || Date.now();
+    const completed = Date.now();
+    const minutes = Math.max(1, Math.round((completed - started) / 60000));
+    const s = getSessions();
+    s.push({ id: generateId(), mode: 'focus', startedAt: new Date(started).toISOString(), completedAt: new Date(completed).toISOString(), minutes });
+    saveSessions(s);
+    sessionLogged = true;
+    sessionStartedAt = null;
+  }
+
+  function generateId() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 
   function getState() {
     try {
@@ -20,7 +40,7 @@
 
   function saveState() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ mode, remaining, isRunning }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ mode, remaining, isRunning, sessionStartedAt }));
     } catch { /* ignore */ }
   }
 
@@ -46,6 +66,7 @@
       updateDisplay();
       saveState();
     } else {
+      if (mode === 'focus' && isRunning && !sessionLogged) { logFocusSession(); }
       clearInterval(timerInterval);
       timerInterval = null;
       isRunning = false;
@@ -56,6 +77,8 @@
 
   function startTimer() {
     if (isRunning) return;
+    sessionLogged = false;
+    sessionStartedAt = Date.now();
     isRunning = true;
     timerInterval = setInterval(tick, 1000);
     updateDisplay();
@@ -72,12 +95,16 @@
 
   function resetTimer() {
     pauseTimer();
+    sessionLogged = false;
+    sessionStartedAt = null;
     remaining = DURATIONS[mode];
     updateDisplay();
     saveState();
   }
 
   function switchMode(newMode) {
+    sessionLogged = false;
+    sessionStartedAt = null;
     mode = newMode;
     remaining = DURATIONS[mode];
     isRunning = false;
@@ -99,6 +126,7 @@
       mode = state.mode || 'focus';
       remaining = state.remaining || DURATIONS[mode];
       isRunning = state.isRunning || false;
+      sessionStartedAt = typeof state.sessionStartedAt === 'number' ? state.sessionStartedAt : null;
     } else {
       mode = 'focus';
       remaining = DURATIONS.focus;

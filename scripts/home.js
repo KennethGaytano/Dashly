@@ -333,12 +333,77 @@
   }
 
   /**
-   * Initialize home page task display
+   * Sync the home Projects stat to the stored project count
    */
+  function updateProjectCount() {
+    try {
+      const STORAGE_PROJECTS = 'dashboard_projects';
+      function readStorage(k) { try { const raw = localStorage.getItem(k); return raw ? JSON.parse(raw) : null; } catch { return null; } }
+      const p = readStorage(STORAGE_PROJECTS) || [];
+      const count = Array.isArray(p) ? p.length : 0;
+      const el = document.getElementById('homeProjects');
+      if (el) el.textContent = String(count);
+    } catch (e) { /* leave static */ }
+  }
+
+  /**
+   * Derive study hours/minutes from focus sessions (same rolling 7-day window as progress)
+   */
+  function updateStudyTime() {
+    try {
+      const STORAGE_SESSIONS = 'dashboard_pomodoro_sessions';
+      function readStorage(k) { try { const raw = localStorage.getItem(k); return raw ? JSON.parse(raw) : null; } catch { return null; } }
+      function localKey(d) { d = d || new Date(); const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0'); return y + '-' + m + '-' + day; }
+      const today = new Date(); const keys = [];
+      for (let i = 6; i >= 0; i--) { const d = new Date(today); d.setDate(today.getDate() - i); keys.push(localKey(d)); }
+      const sessions = readStorage(STORAGE_SESSIONS) || [];
+      let minutes = 0;
+      sessions.forEach(function(s) { if (s && s.mode === 'focus' && s.completedAt) { const d = new Date(s.completedAt); if (!isNaN(d.getTime()) && keys.indexOf(localKey(d)) !== -1) minutes += (typeof s.minutes === 'number' ? s.minutes : 0); } });
+      const h = Math.floor(minutes / 60); const m = minutes % 60;
+      const el = document.getElementById('homeStudyTime');
+      if (el) el.textContent = h + 'h ' + String(m).padStart(2, '0') + 'm';
+    } catch (e) { /* leave static */ }
+  }
+
+  /**
+   * Sync the home page Streak stat to the derived progress-module value
+   */
+  function updateStreak() {
+    const streakEl = document.getElementById('homeStreak') || document.querySelector('.stat-card a[href="pages/progress.html"] .stat-value');
+    if (!streakEl) return;
+    try {
+      // Derive from progress module's computeStats logic (no dependency, mirror formula)
+      const STORAGE_TASKS = 'dashboard_tasks';
+      const STORAGE_SESSIONS = 'dashboard_pomodoro_sessions';
+      function readStorage(k) { try { const raw = localStorage.getItem(k); return raw ? JSON.parse(raw) : null; } catch { return null; } }
+      function localKey(d) { d = d || new Date(); const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0'); return y + '-' + m + '-' + day; }
+      const tasks = readStorage(STORAGE_TASKS) || [];
+      const sessions = readStorage(STORAGE_SESSIONS) || [];
+      const activityDays = {};
+      tasks.forEach(function(t) { if (t && t.status === 'completed' && (t.updatedAt || t.createdAt)) { const d = new Date(t.updatedAt || t.createdAt); if (!isNaN(d.getTime())) activityDays[localKey(d)] = true; } });
+      sessions.forEach(function(s) { if (s && s.mode === 'focus' && s.completedAt) { const d = new Date(s.completedAt); if (!isNaN(d.getTime())) activityDays[localKey(d)] = true; } });
+      let streak = 0; const startDay = new Date(); const hasToday = !!activityDays[localKey(startDay)];
+      if (!hasToday) startDay.setDate(startDay.getDate() - 1);
+      for (let i = 0; i < 30; i++) { const d = new Date(startDay); d.setDate(startDay.getDate() - i); if (activityDays[localKey(d)]) streak++; else break; }
+      streakEl.textContent = streak + ' day' + (streak !== 1 ? 's' : '');
+    } catch (e) { /* leave static if anything fails */ }
+  }
+
+  /**
+   * Recompute every stat card derived from localStorage.
+   * Called on load and whenever the tab regains focus.
+   */
+  function refreshHomeStats() {
+    updateProjectCount();
+    updateStudyTime();
+    updateStreak();
+  }
+
   function init() {
     setGreeting();
     renderHomeTasks();
     updateTaskCount();
+    refreshHomeStats();
     scheduleTaskStateRefresh();
 
     // Delegate checkbox changes instead of inline onchange (fixes CSP / a11y).
@@ -354,6 +419,7 @@
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) {
         refreshTaskState();
+        refreshHomeStats();
       }
     });
   }

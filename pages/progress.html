@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="../styles/base.css">
     <link rel="stylesheet" href="../styles/layout.css">
     <link rel="stylesheet" href="../styles/components.css">
+    <link rel="stylesheet" href="../styles/goals.css">
     <link rel="stylesheet" href="../styles/progress.css">
 </head>
 <body>
@@ -53,119 +54,105 @@
             <p>Track how you're doing across different areas.</p>
         </header>
 
-        <section>
+        <section aria-live="polite">
             <h2>Weekly Stats</h2>
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon" aria-hidden="true">📋</div>
                     <h3>Tasks Done</h3>
-                    <p class="stat-value">12</p>
+                    <p class="stat-value" id="statTasksDone">0</p>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon" aria-hidden="true">⏱️</div>
                     <h3>Hours Studied</h3>
-                    <p class="stat-value">18.5</p>
+                    <p class="stat-value" id="statHoursStudied">0.0</p>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon" aria-hidden="true">🍅</div>
                     <h3>Pomodoros</h3>
-                    <p class="stat-value">24</p>
+                    <p class="stat-value" id="statPomodoros">0</p>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon" aria-hidden="true">🔥</div>
                     <h3>Day Streak</h3>
-                    <p class="stat-value">7</p>
+                    <p class="stat-value" id="statStreak">0</p>
                 </div>
             </div>
         </section>
 
+        <!-- Add/Edit Skill or Project -->
         <section>
-            <h2>Skills & Learning</h2>
+            <h2 id="formTitle">Add Track</h2>
             <div class="card">
-                <div class="progress-item">
-                    <div class="progress-label">
-                        <span>JavaScript</span>
-                        <span>75%</span>
+                <form id="trackForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="trackType" class="form-label">Track type</label>
+                            <select id="trackType" name="type">
+                                <option value="skill" selected>Skill</option>
+                                <option value="project">Project</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="trackProgress" class="form-label">Progress <span class="required">*</span></label>
+                            <select id="trackProgress" name="progress" required aria-required="true">
+                                <!-- Options generated from PROGRESS_STEPS in progress.js -->
+                            </select>
+                        </div>
                     </div>
-                    <div class="progress-bar" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" aria-label="JavaScript progress">
-                        <div class="progress-fill" style="width: 75%;"></div>
+
+                    <div class="form-group">
+                        <label for="trackName" class="form-label">Name <span class="required">*</span></label>
+                        <input type="text" id="trackName" name="name" placeholder="e.g. TypeScript" required aria-required="true">
                     </div>
-                </div>
-                <div class="progress-item">
-                    <div class="progress-label">
-                        <span>Python</span>
-                        <span>60%</span>
+
+                    <div class="form-actions">
+                        <button type="submit" id="submitBtn" class="btn btn-primary">+ Add</button>
+                        <button type="button" id="cancelBtn" class="btn btn-secondary">Cancel</button>
                     </div>
-                    <div class="progress-bar" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" aria-label="Python progress">
-                        <div class="progress-fill" style="width: 60%;"></div>
-                    </div>
-                </div>
-                <div class="progress-item">
-                    <div class="progress-label">
-                        <span>Data Structures & Algorithms</span>
-                        <span>45%</span>
-                    </div>
-                    <div class="progress-bar" role="progressbar" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100" aria-label="Data Structures and Algorithms progress">
-                        <div class="progress-fill" style="width: 45%;"></div>
-                    </div>
-                </div>
-                <div class="progress-item">
-                    <div class="progress-label">
-                        <span>System Design</span>
-                        <span>30%</span>
-                    </div>
-                    <div class="progress-bar" role="progressbar" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100" aria-label="System Design progress">
-                        <div class="progress-fill" style="width: 30%;"></div>
-                    </div>
-                </div>
-                <div class="progress-item">
-                    <div class="progress-label">
-                        <span>CSS & Design</span>
-                        <span>85%</span>
-                    </div>
-                    <div class="progress-bar" role="progressbar" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100" aria-label="CSS and Design progress">
-                        <div class="progress-fill" style="width: 85%;"></div>
-                    </div>
-                </div>
+                </form>
             </div>
         </section>
 
         <section>
-            <h2>Project Completion</h2>
-            <div class="card">
-                <div class="progress-item">
-                    <div class="progress-label">
-                        <span>Personal Dashboard</span>
-                        <span>40%</span>
-                    </div>
-                    <div class="progress-bar" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" aria-label="Personal Dashboard progress">
-                        <div class="progress-fill" style="width: 40%;"></div>
-                    </div>
-                </div>
-                <div class="progress-item">
-                    <div class="progress-label">
-                        <span>Portfolio Website</span>
-                        <span>90%</span>
-                    </div>
-                    <div class="progress-bar" role="progressbar" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100" aria-label="Portfolio Website progress">
-                        <div class="progress-fill" style="width: 90%;"></div>
-                    </div>
-                </div>
-                <div class="progress-item">
-                    <div class="progress-label">
-                        <span>API Integration</span>
-                        <span>55%</span>
-                    </div>
-                    <div class="progress-bar" role="progressbar" aria-valuenow="55" aria-valuemin="0" aria-valuemax="100" aria-label="API Integration progress">
-                        <div class="progress-fill" style="width: 55%;"></div>
-                    </div>
+            <h2>Skills &amp; Learning</h2>
+            <div class="card" id="skillsList">
+                <!-- Dynamically populated by progress.js -->
+            </div>
+        </section>
+
+        <section aria-live="polite">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:0.75rem;">
+                <h2>Goals Progress <span aria-hidden="true">🎯</span></h2>
+                <div id="filterRow" role="group" aria-label="Filter goals" style="display:flex;gap:0.25rem;">
+                    <button type="button" class="btn btn-sm" data-filter="all" aria-pressed="true">All</button>
+                    <button type="button" class="btn btn-sm" data-filter="active" aria-pressed="false">Active</button>
+                    <button type="button" class="btn btn-sm" data-filter="paused" aria-pressed="false">Paused</button>
+                    <button type="button" class="btn btn-sm" data-filter="completed" aria-pressed="false">Completed</button>
                 </div>
             </div>
+            <p id="goalsSummary" style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.5rem;"></p>
+            <div class="card" id="goalsProgressList"></div>
         </section>
 
     </main>
 
-    <script src="../scripts/nav.js"></script>
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-content">
+            <h3 id="modalTitle">Delete</h3>
+            <p id="confirmMessage">Are you sure you want to delete this item?</p>
+            <div class="modal-actions">
+                <button type="button" id="cancelModal" class="btn btn-secondary">Cancel</button>
+                <button type="button" id="confirmDelete" class="btn btn-danger">Delete</button>
+            </div>
+        </div>
+    </div>
 
+    <!-- Toast Notification -->
+    <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+    <script src="../scripts/nav.js"></script>
+    <script src="../scripts/progress.js"></script>
 </body>
 </html>

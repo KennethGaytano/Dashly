@@ -35,3 +35,42 @@
     background: linear-gradient(90deg, var(--accent), var(--accent-light));
     transition: width 0.6s ease;
 }
+
+/* 100% success gradient reuse from goals.js */
+.progress-fill.fill-complete {
+    background: linear-gradient(90deg, var(--success), #6ee7b7);
+}
+
+/* Track row layout + inline edit input */
+.progress-item .progress-label + div > .btn-icon,
+.progress-item .progress-label + div + div .btn-icon {
+    margin-left: 0.25rem;
+}
+
+.nudge-input {
+    width: 4.5rem;
+    min-width: 3.5rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.ladder-readout {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin: 0.1rem 0 0.3rem 0;
+    font-variant-numeric: tabular-nums;
+}
+
+.stepper {
+    display: flex;
+    gap: 0.25rem;
+}
+
+@media (max-width: 480px) {
+    .nudge-input { width: 3.5rem; }
+    .progress-item .progress-label { flex-wrap: wrap; gap: 0.25rem; }
+    .ladder-readout { font-size: 0.78rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .progress-fill { transition: none; }
+}
