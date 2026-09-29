@@ -29,15 +29,6 @@ https://kennethgaytano.github.io/Personal-Dashboard/
 
 Static HTML, CSS, and vanilla JavaScript. No framework, no build step, no backend. All data lives in the browser's `localStorage`, so it is per-device and does not sync.
 
-## Run locally
-
-```bash
-cd .claude/skills/run-personal-dashboard
-node server.mjs
-```
-
-Then open http://localhost:3000/.
-
 ## Data storage
 
 | Key | Contents |
