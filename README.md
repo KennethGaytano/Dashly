@@ -2,8 +2,6 @@
 
 An AI-assisted personal productivity dashboard that brings tasks, calendar events, notes, goals, progress, and study sessions into one organized space. It provides a daily overview of what is due, focused study time, and goal progress, along with a Pomodoro timer and quick notes.
 
-The project is a work in progress, with features and design elements still being refined.
-
 ## Live Site
 
 https://kennethgaytano.github.io/Personal-Dashboard/
