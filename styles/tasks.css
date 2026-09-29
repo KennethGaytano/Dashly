@@ -135,6 +135,18 @@
     white-space: nowrap;
 }
 
+.task-link {
+    display: inline-block;
+    margin-top: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--accent);
+    overflow-wrap: anywhere;
+}
+
+.task-link:hover { text-decoration: underline; }
+
+.task-item.completed .task-link { opacity: 0.6; }
+
 /* ===== Overdue Warning ===== */
 .task-overdue {
     display: inline-flex;

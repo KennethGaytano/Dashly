@@ -74,6 +74,7 @@ function createTask(taskData) {
     id: generateId(),
     title: taskData.title.trim(),
     description: taskData.description ? taskData.description.trim() : '',
+    url: taskData.url ? taskData.url.trim() : '',
     dueDate: taskData.dueDate || '',
     dueTime: taskData.dueDate && taskData.dueTime ? taskData.dueTime : '',
     status: taskData.status || TaskStatus.TODO,
@@ -115,6 +116,9 @@ function updateTask(taskId, updates) {
   if (updates.title) updates.title = updates.title.trim();
   if (updates.description !== undefined) {
     updates.description = updates.description.trim();
+  }
+  if (updates.url !== undefined) {
+    updates.url = updates.url.trim();
   }
 
   tasks[index] = {
@@ -177,6 +181,12 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str == null ? '' : String(str);
   return div.innerHTML;
+}
+
+function taskLinkHtml(task) {
+  const link = normalizeLink(task.url);
+  if (!link) return '';
+  return `<a class="task-link" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" aria-label="Open link for ${escapeHtml(task.title)} (opens in a new tab)">${escapeHtml(displayLink(link))}</a>`;
 }
 
 /**
@@ -243,6 +253,7 @@ function renderTaskSection(containerId, tasks, emptyMessage) {
           </div>
         </div>
         ${task.description ? `<p class="task-description">${escapeHtml(task.description)}</p>` : ''}
+        ${taskLinkHtml(task)}
         ${formatDueDateTime(task) ? `<p class="task-due-date">${formatDueDateTime(task)}</p>` : ''}
       </div>
     </div>
@@ -349,9 +360,24 @@ function handleFormSubmit(event) {
   event.preventDefault();
 
   const form = event.target;
+  const rawUrl = form.url ? form.url.value.trim() : '';
+
+  // Optional, but a typed-and-unusable link is a mistake worth reporting
+  // rather than silently dropping.
+  if (rawUrl && !normalizeLink(rawUrl)) {
+    showMessage('That link is not a valid web address', 'error');
+    if (form.url) {
+      form.url.setAttribute('aria-invalid', 'true');
+      form.url.focus();
+    }
+    return;
+  }
+  if (form.url) form.url.removeAttribute('aria-invalid');
+
   const formData = {
     title: form.title.value,
     description: form.description.value,
+    url: normalizeLink(rawUrl) || '',
     dueDate: form.dueDate.value,
     dueTime: form.dueDate.value ? form.dueTime.value : '',
     status: form.status.value,
@@ -394,6 +420,8 @@ function startEditTask(taskId) {
   // Populate form
   document.getElementById('taskTitle').value = task.title;
   document.getElementById('taskDescription').value = task.description || '';
+  const urlInput = document.getElementById('taskUrl');
+  if (urlInput) urlInput.value = task.url || '';
   document.getElementById('taskDueDate').value = task.dueDate || '';
   document.getElementById('taskDueTime').value = task.dueTime || '';
   document.getElementById('taskStatus').value = task.status;

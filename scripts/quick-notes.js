@@ -51,9 +51,10 @@
     const toast = document.getElementById('toast');
     if (toast) {
       toast.textContent = msg;
-      toast.className = 'toast ' + (type || '');
-      toast.style.display = 'block';
-      setTimeout(() => { toast.style.display = 'none'; }, 3000);
+      toast.className = 'toast ' + (type || '') + ' show';
+      // The .show class handles visibility; display:none is not used so
+      // reduced-motion and screen-reader live-region toggles work correctly.
+      setTimeout(() => { toast.classList.remove('show'); }, 3000);
     } else {
       console.log('[' + (type || 'info') + ']', msg);
     }

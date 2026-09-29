@@ -51,6 +51,16 @@ button.note-card:hover {
     margin-top: 0.75rem;
 }
 
+.note-card .note-link {
+    display: inline-block;
+    margin-top: 0.4rem;
+    font-size: 0.8rem;
+    color: var(--accent);
+    overflow-wrap: anywhere;
+}
+
+.note-card .note-link:hover { text-decoration: underline; }
+
 .note-color-bar {
     height: 3px;
     border-radius: 2px;

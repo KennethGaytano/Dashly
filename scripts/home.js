@@ -138,8 +138,8 @@
       <div class="task-item ${task.status === 'completed' ? 'completed' : ''}">
         <input
           type="checkbox"
+          data-task-id="${escapeHtml(task.id)}"
           ${task.status === 'completed' ? 'checked' : ''}
-          onchange="toggleHomeTask('${escapeHtml(task.id)}')"
           aria-label="Mark task ${escapeHtml(task.title)} as ${task.status === 'completed' ? 'incomplete' : 'complete'}"
         >
         <div class="task-content">
@@ -230,8 +230,11 @@
 
   /**
    * Toggle task status from home page
+   * Exported on window for the shared task page, but home.js binds its own
+   * delegated listener instead of an inline onchange, which a strict CSP
+   * would block.
    */
-  window.toggleHomeTask = function(taskId) {
+  function toggleHomeTask(taskId) {
     const tasks = getTasks();
     const task = tasks.find(t => t.id === taskId);
 
@@ -252,7 +255,11 @@
     } catch (error) {
       console.error('Error updating task:', error);
     }
-  };
+  }
+
+  // The task page still calls this through an inline handler, so keep it
+  // reachable there.
+  window.toggleHomeTask = toggleHomeTask;
 
   /**
    * Greet the user according to the time of day
@@ -310,6 +317,12 @@
     renderHomeTasks();
     updateTaskCount();
     scheduleTaskStateRefresh();
+
+    // Delegate checkbox changes instead of inline onchange (fixes CSP / a11y).
+    document.getElementById('homeTaskList')?.addEventListener('change', e => {
+      const cb = e.target.closest('input[type="checkbox"][data-task-id]');
+      if (cb) toggleHomeTask(cb.getAttribute('data-task-id'));
+    });
 
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) {

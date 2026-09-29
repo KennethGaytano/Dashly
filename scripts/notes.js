@@ -65,6 +65,7 @@ function createNote(data) {
     id: generateId(),
     title: title,
     body: (data.body || '').trim(),
+    url: data.url || '',
     color: sanitizeColor(data.color),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -89,6 +90,7 @@ function updateNote(id, updates) {
   }
   note.title = title;
   if (updates.body !== undefined) note.body = updates.body.trim();
+  if (updates.url !== undefined) note.url = updates.url.trim();
   if (updates.color !== undefined) note.color = sanitizeColor(updates.color);
   note.updatedAt = new Date().toISOString();
   return saveNotes(notes);
@@ -127,6 +129,16 @@ function formatNoteDate(dateStr) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+/**
+ * Render a note's link. Notes are stored raw and may predate the field, so
+ * re-check the value before it reaches an href.
+ */
+function noteLinkHtml(note) {
+  const link = normalizeLink(note.url);
+  if (!link) return '';
+  return `<a class="note-link" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" aria-label="Open link for ${escapeHtml(note.title)} (opens in a new tab)">${escapeHtml(displayLink(link))}</a>`;
+}
+
 function renderNotes() {
   const container = document.getElementById('notesList');
   if (!container) return;
@@ -141,6 +153,7 @@ function renderNotes() {
       <div class="note-color-bar note-color-${escapeHtml(note.color)}" aria-hidden="true"></div>
       <h3>${escapeHtml(note.title)}</h3>
       <p>${escapeHtml(note.body) || '&nbsp;'}</p>
+      ${noteLinkHtml(note)}
       <div class="note-date">${escapeHtml(formatNoteDate(note.updatedAt))}</div>
       <div class="note-actions">
         <button type="button" class="btn-icon" onclick="startEditNote('${escapeHtml(note.id)}')" aria-label="Edit note ${escapeHtml(note.title)}">✏️</button>
@@ -157,8 +170,10 @@ function startEditNote(id) {
   editingNoteId = id;
   const titleInput = document.getElementById('noteTitle');
   const bodyInput = document.getElementById('noteBody');
+  const urlInput = document.getElementById('noteUrl');
   if (titleInput) titleInput.value = note.title;
   if (bodyInput) bodyInput.value = note.body || '';
+  if (urlInput) urlInput.value = note.url || '';
   // Restore color radio
   const colorInput = document.querySelector('input[name="noteColor"][value="' + sanitizeColor(note.color) + '"]');
   if (colorInput) colorInput.checked = true;
@@ -172,8 +187,10 @@ function cancelEdit() {
   editingNoteId = null;
   const titleInput = document.getElementById('noteTitle');
   const bodyInput = document.getElementById('noteBody');
+  const urlInput = document.getElementById('noteUrl');
   if (titleInput) titleInput.value = '';
   if (bodyInput) bodyInput.value = '';
+  if (urlInput) urlInput.value = '';
   document.getElementById('formTitle').textContent = 'New Note';
   document.getElementById('submitBtn').textContent = '+ Save';
   document.getElementById('cancelBtn').style.display = 'none';
@@ -234,22 +251,39 @@ function init() {
       e.preventDefault();
       const titleInput = document.getElementById('noteTitle');
       const bodyInput = document.getElementById('noteBody');
+      const urlInput = document.getElementById('noteUrl');
       const colorInputs = document.querySelectorAll('input[name="noteColor"]');
       const title = titleInput ? titleInput.value.trim() : '';
       const body = bodyInput ? bodyInput.value.trim() : '';
+      const rawUrl = urlInput ? urlInput.value.trim() : '';
+
+      // A link is optional, but a typed-and-unusable one is a mistake worth
+      // reporting rather than silently dropping.
+      const url = normalizeLink(rawUrl);
+      if (rawUrl && !url) {
+        showMessage('That link is not a valid web address.', 'error');
+        if (urlInput) {
+          urlInput.setAttribute('aria-invalid', 'true');
+          urlInput.focus();
+        }
+        return;
+      }
+      if (urlInput) urlInput.removeAttribute('aria-invalid');
+
       let color = 'accent';
       colorInputs.forEach(input => { if (input.checked) color = input.value; });
       if (editingNoteId) {
-        updateNote(editingNoteId, { title: title, body: body, color: color });
+        updateNote(editingNoteId, { title: title, body: body, url: url || '', color: color });
         editingNoteId = null;
         document.getElementById('formTitle').textContent = 'New Note';
         document.getElementById('submitBtn').textContent = '+ Save';
         document.getElementById('cancelBtn').style.display = 'none';
       } else {
-        createNote({ title: title, body: body, color: color });
+        createNote({ title: title, body: body, url: url || '', color: color });
       }
       if (titleInput) titleInput.value = '';
       if (bodyInput) bodyInput.value = '';
+      if (urlInput) urlInput.value = '';
       renderNotes();
     };
   }

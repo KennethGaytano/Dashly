@@ -100,10 +100,17 @@
                         <button type="submit" class="btn btn-primary" style="white-space:nowrap;">Add event</button>
                         <button type="button" id="cancelEventBtn" class="btn btn-secondary" hidden>Cancel</button>
                     </div>
-                    <div class="form-group" style="margin-top:0.5rem;">
-                        <label for="eventDesc" class="form-label">Notes</label>
-                        <input type="text" id="eventDesc" placeholder="Details..." />
+                    <div class="form-row form-row-secondary" style="margin-top:0.5rem;">
+                        <div class="form-group" style="flex:2;min-width:180px;">
+                            <label for="eventDesc" class="form-label">Notes</label>
+                            <input type="text" id="eventDesc" placeholder="Details..." />
+                        </div>
+                        <div class="form-group" style="flex:2;min-width:180px;">
+                            <label for="eventUrl" class="form-label">Link</label>
+                            <input type="text" id="eventUrl" placeholder="https://…" inputmode="url" autocomplete="off" aria-describedby="eventUrlHelp" />
+                        </div>
                     </div>
+                    <p id="eventUrlHelp" class="form-help">Optional. “example.com/notes” works too — it opens in a new tab.</p>
                 </form>
             </div>
             <div class="card" style="margin-top:1rem;">
@@ -123,8 +130,21 @@
 
         <div id="calendarToast" class="toast" role="status" aria-live="polite"></div>
 
+        <div id="calendarDeleteModal" class="modal" role="dialog" aria-modal="true"
+             aria-labelledby="deleteModalTitle" aria-describedby="deleteModalMessage">
+            <div class="modal-content">
+                <h3 id="deleteModalTitle">Delete event</h3>
+                <p id="deleteModalMessage">Are you sure you want to delete this event?</p>
+                <div class="modal-actions">
+                    <button type="button" id="cancelDeleteModal" class="btn btn-secondary">Cancel</button>
+                    <button type="button" id="confirmDeleteBtn" class="btn btn-danger">Delete</button>
+                </div>
+            </div>
+        </div>
+
     </main>
 
+    <script src="../scripts/link-utils.js"></script>
     <script src="../scripts/nav.js"></script>
     <script src="../scripts/calendar.js"></script>
     <script src="../scripts/calendar-events.js"></script>
