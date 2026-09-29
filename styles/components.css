@@ -142,10 +142,13 @@ button.stat-card:hover {
     margin-left: 0.15rem;
 }
 
+/* The form-group's flex gap already spaces this from the input, so the
+   browser's default <p> margin only pushes it out of alignment. */
 .form-help {
     color: var(--text-muted);
     font-size: 0.75rem;
     line-height: 1.4;
+    margin: 0;
 }
 
 .form-row {

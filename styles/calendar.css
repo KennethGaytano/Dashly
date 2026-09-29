@@ -115,8 +115,10 @@
 @media (min-width: 640px) {
     .form-row { display: grid; grid-template-columns: minmax(0,2fr) 1fr 1fr auto auto; gap: 0.75rem; align-items: end; }
     .form-row input[type="date"], .form-row input[type="time"] { width: 100%; }
-    /* Second row is Notes + Link only, so it needs its own track count. */
-    .form-row.form-row-secondary { grid-template-columns: minmax(0,1fr) minmax(0,1fr); align-items: end; }
+    /* Second row is Notes + Link only, so it needs its own track count.
+       Align to the top: the Link group carries help text below its input, and
+       end-aligning would drop that input below the Notes one. */
+    .form-row.form-row-secondary { grid-template-columns: minmax(0,1fr) minmax(0,1fr); align-items: start; }
 }
 .event-item-link {
     display: inline-block; margin-top: 0.2rem;
