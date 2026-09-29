@@ -129,6 +129,41 @@ main {
     max-width: 1200px;
 }
 
+/* ===== Page Load Reveal =====
+   Moving between pages is a full document load, so there is no router to
+   animate. The page assembles itself on arrival instead.
+
+   Scoped away from .toast/.modal on purpose: calendar.html places both inside
+   <main>, and fill-mode:both would hold opacity:1 at the end of the animation
+   and leave the toast permanently on screen. No position:fixed element lives
+   inside <main>, so the transient transform breaks no containing blocks. */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+main > *:not(.toast):not(.modal) {
+    animation: slideUp 0.25s ease-out both;
+}
+
+/* Staggered increments; n+6 clamps so a long page cannot stretch the reveal
+   past 0.25s + 0.25s. Under the 300ms ceiling for a single element. */
+main > *:not(.toast):not(.modal):nth-child(1) { animation-delay: 0s; }
+main > *:not(.toast):not(.modal):nth-child(2) { animation-delay: 0.05s; }
+main > *:not(.toast):not(.modal):nth-child(3) { animation-delay: 0.1s; }
+main > *:not(.toast):not(.modal):nth-child(4) { animation-delay: 0.15s; }
+main > *:not(.toast):not(.modal):nth-child(5) { animation-delay: 0.2s; }
+main > *:not(.toast):not(.modal):nth-child(n+6) { animation-delay: 0.25s; }
+
+/* Reduced motion needs no rule of its own: base.css already forces
+   animation-duration to 0.01ms under prefers-reduced-motion: reduce. */
+
 /* ===== Page Header ===== */
 header {
     margin-bottom: 2rem;
