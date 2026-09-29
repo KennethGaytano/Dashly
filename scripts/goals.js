@@ -58,6 +58,28 @@ function getGoalsWithSeed() {
   return g;
 }
 
+/**
+ * Single source of truth for a goal's completion status.
+ *
+ * A goal counts as complete when every milestone is done, or -- for goals with
+ * no milestones -- when progress reaches 100%. Past that the caller's intent
+ * wins: an explicit `paused` or `completed` choice is honoured, and anything
+ * else falls back to active. Passing `null` as the intent is how the milestone
+ * toggle re-derives the status, so unticking a milestone moves a completed
+ * goal back to Active instead of leaving it stuck as Completed.
+ */
+function deriveStatus(goal, intendedStatus) {
+  const milestones = goal.milestones || [];
+  const doneCount = milestones.filter(m => m && m.done).length;
+  const progress = Math.min(100, Math.max(0, Math.round(Number(goal.progress || 0))));
+  const isComplete = milestones.length > 0 ? doneCount >= milestones.length : progress >= 100;
+
+  if (isComplete) return GoalStatus.COMPLETED;
+  if (intendedStatus === GoalStatus.PAUSED) return GoalStatus.PAUSED;
+  if (intendedStatus === GoalStatus.COMPLETED) return GoalStatus.COMPLETED;
+  return GoalStatus.ACTIVE;
+}
+
 function createGoal(data) {
   if (!data.title || !data.title.trim()) return null;
   const goal = {
@@ -69,6 +91,7 @@ function createGoal(data) {
     milestones: (data.milestones || []).map(m => ({ text: m.text, done: false })),
     createdAt: new Date().toISOString()
   };
+  goal.status = deriveStatus(goal, goal.status);
   const goals = getGoalsWithSeed();
   goals.push(goal);
   saveGoals(goals);
@@ -102,6 +125,11 @@ function updateGoal(id, updates) {
     updates.progress = Math.min(100, Math.max(0, Math.round(Number(updates.progress))));
   }
 
+  // Reconcile the badge with reality: all milestones done (or 100% with no
+  // milestones) means Completed, and anything less honours the chosen status.
+  const merged = { ...goals[i], ...updates };
+  updates.status = deriveStatus(merged, updates.status);
+
   goals[i] = { ...goals[i], ...updates, updatedAt: new Date().toISOString() };
   saveGoals(goals);
   return true;
@@ -125,6 +153,9 @@ function toggleMilestone(goalId, idx) {
   const done = g.milestones.filter(m => m.done).length;
   const total = g.milestones.length;
   g.progress = total ? Math.round((done / total) * 100) : g.progress;
+  // Re-derive rather than passing the old status through: a goal that just
+  // lost a milestone must fall back to Active, not stay stuck as Completed.
+  g.status = deriveStatus(g, g.status === GoalStatus.COMPLETED ? null : g.status);
   saveGoals(goals);
   renderGoals();
   return true;

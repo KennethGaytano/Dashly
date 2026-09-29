@@ -76,6 +76,21 @@
   }
 
   // ---- goals read-only render ----
+  /**
+   * Derive a goal's status from stored data so the sort order, the filter, and
+   * the badge can never disagree with one another. This also rescues goals
+   * already sitting in storage whose `status` was never written as 'completed'
+   * when they finished -- which is what kept them out of the Completed filter.
+   */
+  function effectiveStatus(g) {
+    const pct = Math.min(100, Math.max(0, Math.round(Number(g.progress || 0))));
+    const ms = g.milestones || [];
+    const allDone = ms.length > 0 && ms.every(m => m && m.done);
+    if (g.status === 'completed' || pct >= 100 || allDone) return 'completed';
+    if (g.status === 'paused') return 'paused';
+    return 'active';
+  }
+
   function renderGoals() {
     const container = document.getElementById('goalsProgressList');
     if (!container) return;
@@ -88,8 +103,8 @@
     // Sort: active, paused, completed; within each: highest progress; stable by createdAt for ties
     const sorted = raw.slice().sort(function(a, b) {
       const order = { 'active': 0, 'paused': 1, 'completed': 2 };
-      const aOrd = order[a.status] !== undefined ? order[a.status] : 3;
-      const bOrd = order[b.status] !== undefined ? order[b.status] : 3;
+      const aOrd = order[effectiveStatus(a)];
+      const bOrd = order[effectiveStatus(b)];
       if (aOrd !== bOrd) return aOrd - bOrd;
       const aProg = Number(a.progress || 0);
       const bProg = Number(b.progress || 0);
@@ -102,7 +117,7 @@
     const summary = document.getElementById('goalsSummary');
     if (summary) summary.textContent = total + ' of ' + total + ' goals · ' + avg + '% average progress';
 
-    const visible = currentFilter === 'all' ? sorted : sorted.filter(function(g) { return g.status === currentFilter; });
+    const visible = currentFilter === 'all' ? sorted : sorted.filter(function(g) { return effectiveStatus(g) === currentFilter; });
     if (visible.length === 0) {
       container.innerHTML = '<p class="empty-state"><span class="empty-icon" aria-hidden="true">🎯</span> No ' + escapeHtml(currentFilter) + ' goals.</p>';
       return;
@@ -114,8 +129,9 @@
       const milestoneLine = totalMs ? (doneMs + ' of ' + totalMs + ' milestones done') : '';
       const descHtml = (g.desc || '').trim() ? '<p class="goal-description">' + escapeHtml(g.desc) + '</p>' : '';
       const completeClass = pct === 100 ? 'fill-complete' : '';
-      const statusClass = g.status === 'completed' ? 'badge-completed' : g.status === 'paused' ? 'badge-paused' : 'badge-active';
-      const statusLabel = g.status === 'completed' ? 'Completed' : g.status === 'paused' ? 'Paused' : 'Active';
+      const status = effectiveStatus(g);
+      const statusClass = status === 'completed' ? 'badge-completed' : status === 'paused' ? 'badge-paused' : 'badge-active';
+      const statusLabel = status === 'completed' ? 'Completed' : status === 'paused' ? 'Paused' : 'Active';
       return '<div class="goal-card" data-goal-id="' + escapeHtml(g.id) + '">' +
         '<div class="goal-header"><h3>' + escapeHtml(g.title) + '</h3><span class="goal-badge ' + statusClass + '">' + statusLabel + '</span></div>' +
         descHtml +

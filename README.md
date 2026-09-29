@@ -15,11 +15,11 @@ https://kennethgaytano.github.io/Personal-Dashboard/
 - **Pomodoro** — start/pause/reset across Focus and Break modes with a custom 1–120 minute input. A focus session is written to `dashboard_pomodoro_sessions` **only when a block actually completes** — pausing early does not log time.
 - **Notes & Quick Notes** — full CRUD with a color picker, edit/delete, a shared store between the two pages, and toast notifications.
 - **Calendar** — full CRUD for events in `dashboard_events`: dot markers on the grid, a selected-day panel, an Upcoming Events grouped list, an edit banner with cancel, focus management, accessible group roles, a responsive form, and HTML escaping.
-- **Goals** — full CRUD in `dashboard_goals` with a milestone checklist. Toggling a milestone recalculates overall progress, and edit/delete run through a focus-trapped confirmation modal.
+- **Goals** — full CRUD in `dashboard_goals` with a milestone checklist. Toggling a milestone recalculates overall progress, and edit/delete run through a focus-trapped confirmation modal. Completing a goal works three ways — ticking every milestone, choosing **Completed** in the status dropdown, or setting progress to 100 with no milestones — and all of them are reflected in the status badge and in the Progress page's Completed filter. Un-completing a goal reverts it to Active, and a paused goal stays paused.
+  - A read-only **Goals Progress** view on the Progress page lists every goal with All / Active / Paused / Completed filters and an average-progress summary. Status is re-derived from progress and milestones on read, so goals saved before this behaviour existed show under the right filter.
 - **Progress** — derived weekly stats over a rolling 7-day window (tasks done, hours studied, pomodoros, day streak), computed from real task and focus-session data rather than hardcoded numbers, plus:
   - **Skills & Learning** and **Project Completion** (`dashboard_skills` / `dashboard_projects`) as add/delete lists, seeded with 5 skills and 3 projects.
   - Progress moves along a fixed 8-step ladder — `0, 25, 50, 60, 70, 80, 90, 100` — using ‹ › steppers with a "Step N of 8" readout. Values snap to the nearest rung at display time.
-  - A read-only **Goals Progress** view with All / Active / Paused / Completed filters and an average-progress summary.
 
 > **Note:** the delete-confirmation modal on the Progress page is present in the markup but not currently wired up — deleting a track takes effect immediately.
 
@@ -48,5 +48,5 @@ To reset everything, clear site data for the origin in your browser.
 - `pages/` — one HTML file per feature: `tasks`, `calendar`, `notes`, `progress`, `goals`.
 - `scripts/` — one module per page (`tasks.js`, `calendar.js` + `calendar-events.js`, `notes.js` + `quick-notes.js`, `progress.js`, `goals.js`, `home.js`, `pomodoro.js`), plus the shared `nav.js` and `link-utils.js`.
 - `styles/` — split stylesheets: `base.css` (tokens/reset), `layout.css` (sidebar and page scaffolding), `components.css` (buttons, forms, modal, toast), plus one file per page.
-- `.claude/skills/run-personal-dashboard/` — local server, smoke test, and Playwright check scripts (`smoke.mjs`, `task-tests.mjs`, `progress-tests.mjs`, plus targeted checks).
+- `.claude/skills/run-personal-dashboard/` — local server, smoke test, and Playwright check scripts (`smoke.mjs`, `task-tests.mjs`, `goals-tests.mjs`, `progress-tests.mjs`, plus targeted checks).
 

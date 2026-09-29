@@ -333,9 +333,50 @@ async function runTests() {
     await page.waitForTimeout(120);
 
     // -------------------------------------------------------------
-    // Test 12: XSS Escaping
+    // Test 12: Completed Is Derived, Not Just Trusted From Storage
     // -------------------------------------------------------------
-    console.log('\n--- Test Group 12: Input Sanitization / Security ---');
+    // Goals finished before this fix were written with status 'active' because
+    // the save path never reconciled the badge, so they never appeared under
+    // the Completed filter. effectiveStatus() must rescue them on read.
+    console.log('\n--- Test Group 12: Completion Derived on Read ---');
+    await setStorage(page, {
+      dashboard_goals: [
+        { id: 'h1', title: 'Finished But Not Flagged', desc: '', progress: 100, status: 'active', milestones: [], createdAt: '2026-01-01' },
+        { id: 'h2', title: 'All Milestones Done', desc: '', progress: 100, status: 'active', milestones: [{ text: 'only step', done: true }], createdAt: '2026-01-02' },
+        { id: 'h3', title: 'Still In Progress', desc: '', progress: 50, status: 'active', milestones: [{ text: 'step one', done: true }, { text: 'step two', done: false }], createdAt: '2026-01-03' }
+      ]
+    });
+    await page.reload();
+
+    await page.click('#filterRow button[data-filter="completed"]');
+    await page.waitForTimeout(120);
+    const completedTitles = await page.$$eval('#goalsProgressList .goal-card h3', (hs) => hs.map((h) => h.textContent.trim()));
+    assert(
+      completedTitles.length === 2 && completedTitles.includes('Finished But Not Flagged'),
+      'A 100% goal stored as "active" still shows under Completed'
+    );
+    assert(completedTitles.includes('All Milestones Done'), 'A goal with every milestone done shows under Completed');
+    assert(
+      !completedTitles.includes('Still In Progress'),
+      'A half-done goal is excluded from Completed'
+    );
+    const badges = await page.$$eval('#goalsProgressList .goal-card .goal-badge', (bs) => bs.map((b) => b.textContent.trim()));
+    assert(badges.every((b) => b === 'Completed'), `Derived goals are badged Completed (${badges.join(', ')})`);
+
+    await page.click('#filterRow button[data-filter="active"]');
+    await page.waitForTimeout(120);
+    const activeTitles = await page.$$eval('#goalsProgressList .goal-card h3', (hs) => hs.map((h) => h.textContent.trim()));
+    assert(
+      activeTitles.length === 1 && activeTitles[0] === 'Still In Progress',
+      'Only the genuinely unfinished goal is left under Active'
+    );
+    await page.click('#filterRow button[data-filter="all"]');
+    await page.waitForTimeout(120);
+
+    // -------------------------------------------------------------
+    // Test 14: XSS Escaping
+    // -------------------------------------------------------------
+    console.log('\n--- Test Group 14: Input Sanitization / Security ---');
     await addTrack(page, { name: '<img src=x onerror="window.__pwned=1">Evil', pct: 50 });
     const evilHtml = await page.innerHTML('#skillsList');
     assert(evilHtml.includes('&lt;img'), 'HTML tags escaped in track name');
@@ -344,9 +385,9 @@ async function runTests() {
     assert(goalHtml.includes('&lt;img') || !goalHtml.includes('<img src=x'), 'Goals read view escapes stored HTML');
 
     // -------------------------------------------------------------
-    // Test 13: Empty State & Responsive Rendering
+    // Test 15: Empty State & Responsive Rendering
     // -------------------------------------------------------------
-    console.log('\n--- Test Group 13: Empty State & Mobile Viewport ---');
+    console.log('\n--- Test Group 15: Empty State & Mobile Viewport ---');
     await setStorage(page, { dashboard_skills: [], dashboard_projects: [] });
     await page.reload();
     const tracksEmpty = await page.locator('#skillsList .empty-state').textContent();
@@ -358,9 +399,9 @@ async function runTests() {
     assert(await page.locator('#filterRow').isVisible(), 'Goals filter row is visible on a mobile viewport');
 
     // -------------------------------------------------------------
-    // Test 14: No Uncaught Page Errors
+    // Test 16: No Uncaught Page Errors
     // -------------------------------------------------------------
-    console.log('\n--- Test Group 14: Runtime Error Check ---');
+    console.log('\n--- Test Group 16: Runtime Error Check ---');
     assert(pageErrors.length === 0, `No uncaught page/console errors (${pageErrors.join(' | ') || 'clean'})`);
 
     await browser.close();
