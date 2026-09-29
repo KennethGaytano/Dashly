@@ -65,6 +65,37 @@
     gap: 0.25rem;
 }
 
+/* ===== Goals filter pills ===== */
+.filter-pill {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: 999px;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+
+.filter-pill:hover {
+    background: var(--bg-secondary);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+
+.filter-pill:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* The pressed state is what tells you which filter you are looking at */
+.filter-pill[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
 @media (max-width: 480px) {
     .nudge-input { width: 3.5rem; }
     .progress-item .progress-label { flex-wrap: wrap; gap: 0.25rem; }

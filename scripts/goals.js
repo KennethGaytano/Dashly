@@ -226,7 +226,18 @@ function startEditGoal(id) {
 }
 function cancelEdit() { editingGoalId = null; document.getElementById('goalForm').reset(); document.getElementById('formTitle').textContent = 'Add a Goal'; document.getElementById('submitBtn').textContent = '+ Add Goal'; document.getElementById('cancelBtn').style.display = 'none'; }
 function confirmDeleteGoal(id) { const g = getGoalsWithSeed().find(x => x.id === id); if (!g) return; const modal = document.getElementById('confirmModal'); document.getElementById('confirmMessage').textContent = `Are you sure you want to delete "${g.title}"?`; modalOpener = document.activeElement; modal.style.display = 'flex'; modal.dataset.goalId = id; document.getElementById('cancelModal').focus(); }
-function handleConfirmDelete() { const modal = document.getElementById('confirmModal'); const id = modal.dataset.goalId; if (id && deleteGoal(id)) { if (editingGoalId === id) cancelEdit(); renderGoals(); } closeModal(); }
+function handleConfirmDelete() {
+  const modal = document.getElementById('confirmModal');
+  const id = modal.dataset.goalId;
+  if (id && deleteGoal(id)) {
+    if (editingGoalId === id) cancelEdit();
+    renderGoals();
+    showMessage('Goal deleted successfully', 'success');
+  } else {
+    showMessage('Goal not found', 'error');
+  }
+  closeModal();
+}
 function closeModal() { const m = document.getElementById('confirmModal'); if (!m || m.style.display === 'none') return; m.style.display = 'none'; delete m.dataset.goalId; if (modalOpener && document.contains(modalOpener)) modalOpener.focus(); modalOpener = null; }
 function trapModalFocus(e) { if (e.key !== 'Tab') return; const m = document.getElementById('confirmModal'); if (!m || m.style.display === 'none') return; const focusable = Array.from(m.querySelectorAll('button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter(el => el.offsetParent !== null); if (!focusable.length) return; const first = focusable[0], last = focusable[focusable.length - 1]; if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); } }
 function addMilestoneRow(value = '') {
