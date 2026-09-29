@@ -1,6 +1,6 @@
 # Personal-Dashboard
 
-A vibecoded personal productivity dashboard that pulls tasks, calendar events, notes, goals, progress, and study sessions into one organized space. It gives you a daily overview of what is due, how much you have focused, and how your goals are tracking — alongside a Pomodoro timer and quick notes.
+An AI-assisted personal productivity dashboard that brings tasks, calendar events, notes, goals, progress, and study sessions into one organized space. It provides a daily overview of what is due, focused study time, and goal progress, along with a Pomodoro timer and quick notes.
 
 The project is a work in progress, with features and design elements still being refined.
 
