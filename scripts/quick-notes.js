@@ -80,6 +80,18 @@
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
+  function normalizeLink(raw) {
+    const value = (raw || '').trim();
+    if (!value) return null;
+    try {
+      const url = new URL(/^[a-z][a-z0-9+.-]*:/i.test(value) ? value : 'https://' + value);
+      return (url.protocol === 'http:' || url.protocol === 'https:') ? url.href : null;
+    } catch (e) { return null; }
+  }
+  function displayLink(href) {
+    return href.replace(/^https?:\/\//i, '').replace(/\/$/, '') || href;
+  }
+
   /**
    * Render the three most recently updated notes
    */
@@ -102,6 +114,10 @@
         <div class="note-color-bar note-color-${escapeHtml(note.color)}" aria-hidden="true"></div>
         <h3>${escapeHtml(note.title)}</h3>
         <p>${escapeHtml(note.body || '')}</p>
+        ${(function() {
+          const link = normalizeLink(note.url || '');
+          return link ? `<a class="note-link" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" aria-label="Open link for ${escapeHtml(note.title)} (opens in a new tab)">${escapeHtml(displayLink(link))}</a>` : '';
+        })()}
         <div class="note-date">${escapeHtml(formatNoteDate(note.updatedAt))}</div>
       </a>
     `).join('');

@@ -94,6 +94,18 @@
     return 0;
   }
 
+  function normalizeLink(raw) {
+    const value = (raw || '').trim();
+    if (!value) return null;
+    try {
+      const url = new URL(/^[a-z][a-z0-9+.-]*:/i.test(value) ? value : 'https://' + value);
+      return (url.protocol === 'http:' || url.protocol === 'https:') ? url.href : null;
+    } catch (e) { return null; }
+  }
+  function displayLink(href) {
+    return href.replace(/^https?:\/\//i, '').replace(/\/$/, '') || href;
+  }
+
   /**
    * Render today's tasks on the home page
    */
@@ -149,6 +161,11 @@
             ${task.priority ? `<span class="task-priority priority-${escapeHtml(task.priority)}">${escapeHtml(task.priority)}</span>` : ''}
           </div>
           ${formatDueDateTime(task) ? `<p class="task-due-date">${formatDueDateTime(task)}</p>` : ''}
+          ${task.description ? `<p class="task-description">${escapeHtml(task.description)}</p>` : ''}
+          ${(function() {
+            const link = normalizeLink(task.url || '');
+            return link ? `<a class="task-link" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" aria-label="Open link for ${escapeHtml(task.title)} (opens in a new tab)">${escapeHtml(displayLink(link))}</a>` : '';
+          })()}
         </div>
       </div>
     `).join('');
