@@ -116,7 +116,7 @@
         <p>${escapeHtml(note.body || '')}</p>
         ${(function() {
           const link = normalizeLink(note.url || '');
-          return link ? `<a class="note-link" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" aria-label="Open link for ${escapeHtml(note.title)} (opens in a new tab)">${escapeHtml(displayLink(link))}</a>` : '';
+          return link ? `<span class="note-link" onclick="window.open('${escapeHtml(link)}','_blank','noopener,noreferrer');event.stopPropagation();" style="cursor:pointer;text-decoration:underline;color:var(--accent);font-size:0.8rem;display:inline-block;margin-top:0.4rem;overflow-wrap:anywhere;" aria-label="Open link for ${escapeHtml(note.title)} (opens in a new tab)">${escapeHtml(displayLink(link))}</span>` : '';
         })()}
         <div class="note-date">${escapeHtml(formatNoteDate(note.updatedAt))}</div>
       </a>
