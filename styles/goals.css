@@ -42,6 +42,12 @@
 .goal-header h3 {
     font-size: 1rem;
     font-weight: 600;
+    /* Without this the heading refuses to shrink below its longest word and
+       the action cluster is pushed past the viewport at 320px. */
+    min-width: 0;
+    /* User text: a pasted URL has no break opportunity and would otherwise
+       widen the whole page. See the note on .task-text. */
+    overflow-wrap: anywhere;
 }
 
 /* Badge sits with the edit/delete controls so the header reads as one row */
@@ -81,6 +87,7 @@
     font-size: 0.85rem;
     color: var(--text-secondary);
     margin-bottom: 1rem;
+    overflow-wrap: anywhere;
 }
 
 .goal-milestones {
@@ -95,6 +102,16 @@
     gap: 0.5rem;
     font-size: 0.82rem;
     color: var(--text-secondary);
+    /* The row itself is the click target (goals.js gives it role="button"), so
+       it carries the height, not the 16px dot inside it. 21px was measured at
+       320px, which is under both the 44px touch target and the 24px WCAG 2.2
+       minimum once the label wraps. */
+    min-height: 44px;
+    padding: 0.15rem 0;
+    /* The label is a flex item and holds user text, so it needs to be allowed
+       to shrink and break. See the note on .task-text. */
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .milestone-check {
@@ -135,4 +152,25 @@
     flex: 1 1 auto;
     width: 100%;
     min-width: 0;
+}
+
+/* ===== Responsive =====
+   A long goal title and a badge plus two 44px buttons cannot share one row
+   on a phone. Below 640px the title takes the full width and the badge and
+   controls drop to their own line, which also clears the 320px overflow. */
+@media (max-width: 640px) {
+    .goal-header {
+        flex-wrap: wrap;
+        gap: 0.6rem;
+    }
+
+    .goal-header h3 {
+        flex: 1 1 100%;
+    }
+
+    .goal-header-actions {
+        /* Pushed to the right so the badge reads as a status label rather
+           than a stray element. */
+        margin-left: auto;
+    }
 }

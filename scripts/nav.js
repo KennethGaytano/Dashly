@@ -1,7 +1,11 @@
 /**
  * Navigation Module
- * Mobile sidebar toggle, scrim dismissal, and focus management.
+ * Mobile drawer toggle, scrim dismissal, and focus management.
  * Loaded on every page.
+ *
+ * The drawer is opened by the "More" tab in the mobile tab bar. It used to be
+ * opened by a floating hamburger button, but a second control for the same
+ * drawer was redundant next to a tab bar that already offers one.
  */
 
 (function() {
@@ -11,8 +15,9 @@
 
   let lastFocused = null;
 
+  /** The More tab: the only control that opens the drawer. */
   function getToggle() {
-    return document.querySelector('.nav-toggle');
+    return document.querySelector('.tab-more');
   }
 
   function getSidebar() {

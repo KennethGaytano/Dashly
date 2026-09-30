@@ -1,4 +1,4 @@
-/* App chrome: sidebar, mobile nav, page scaffolding, section headers */
+/* App chrome: sidebar, mobile app bar, mobile tab bar, page scaffolding */
 
 /* ===== Sidebar ===== */
 aside {
@@ -6,13 +6,16 @@ aside {
     top: 0;
     left: 0;
     width: var(--sidebar-width);
+    /* dvh tracks the shrinking viewport as a mobile browser's URL bar slides
+       away, so the drawer never overshoots the visible area. vvh cannot. */
     height: 100vh;
+    height: 100dvh;
     background: var(--bg-secondary);
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     padding: 1.5rem 0;
-    z-index: 300;
+    z-index: 500;
     overflow-y: auto;
 }
 
@@ -67,51 +70,128 @@ aside {
     flex-shrink: 0;
 }
 
-/* ===== Mobile Navigation Toggle ===== */
-.nav-toggle {
+/* ===== Mobile App Bar =====
+   Sticky page identity. Replaces the old floating hamburger button and the
+   4.5rem of main padding that existed only to leave room for it. Desktop
+   hides it outright, because the sidebar already names the current page. */
+.app-bar {
+    display: none;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: var(--app-bar-height);
+    /* The notch inset is added to the min-height, not baked into a padding
+       that would double up on devices without one. */
+    padding: var(--app-safe-top) 1.25rem 0;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border);
+    /* This is a <header>, and the generic page-header rule adds 2rem of
+       bottom margin meant for a page title. The app bar supplies its own
+       separation via the border. */
+    margin-bottom: 0;
+}
+
+.app-bar-mark {
+    font-size: 1.1rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.app-bar-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    /* Long page names must not push the row wide on a 320px screen. */
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ===== Mobile Tab Bar =====
+   Five destinations at thumb height. Progress and Goals are deliberately not
+   tabs: six at 390px is ~65px each, which truncates every label. They live
+   behind the More button, which opens the existing drawer. */
+.tab-bar {
     display: none;
     position: fixed;
-    top: 0.75rem;
-    left: 0.75rem;
-    z-index: 350;
-    width: 44px;
-    height: 44px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 340;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    /* Keeps the row clear of the home indicator on notched phones. */
+    padding-bottom: var(--app-safe-bottom);
+}
+
+.tab {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    font-size: 1.25rem;
-    line-height: 1;
-    color: var(--text-primary);
-    transition: left var(--transition), background-color var(--transition);
+    gap: 0.1rem;
+    /* 56px clears the 44px minimum with room either side of the label. */
+    min-height: var(--tab-bar-height);
+    padding: 0.35rem 0.15rem 0.4rem;
+    color: var(--text-secondary);
+    transition: color var(--transition);
 }
 
-.nav-toggle:hover {
-    background: var(--bg-card-hover);
+.tab-icon {
+    font-size: 1.1rem;
+    line-height: 1.1;
 }
 
-.nav-toggle .icon-close {
-    display: none;
+.tab-label {
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
-body.nav-open .nav-toggle {
-    left: calc(var(--sidebar-width) + 0.75rem);
+/* The active tab is marked by a rule above the icon rather than a filled
+   pill, so the bar reads as one surface instead of five buttons. */
+.tab::before {
+    content: '';
+    display: block;
+    width: 1.25rem;
+    height: 2px;
+    margin-bottom: 0.1rem;
+    border-radius: 999px;
+    background: transparent;
+    transition: background-color var(--transition);
 }
 
-body.nav-open .nav-toggle .icon-open {
-    display: none;
+.tab.is-active {
+    color: var(--accent-light);
 }
 
-body.nav-open .nav-toggle .icon-close {
-    display: inline;
+.tab.is-active::before {
+    background: var(--accent-light);
+}
+
+.tab-more {
+    font-family: inherit;
+    border: none;
+    background: none;
+    cursor: pointer;
 }
 
 .nav-scrim {
     display: none;
     position: fixed;
     inset: 0;
-    z-index: 250;
+    /* Above the app bar (200) and tab bar (340) so opening the drawer dims
+       the whole page rather than leaving a lit strip at either end. */
+    z-index: 450;
     background: rgba(0, 0, 0, 0.6);
     border: none;
     cursor: pointer;
@@ -257,10 +337,24 @@ section > h2 {
 
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
-    .nav-toggle {
-        display: inline-flex;
+    .app-bar {
+        display: flex;
     }
 
+    .tab-bar {
+        display: flex;
+    }
+
+    /* Standalone links that measured 22px tall at 320-390px. A target in its
+       own right rather than a link inside a sentence, so the inline-target
+       exemption does not apply. Given height rather than extra padding, which
+       would have pulled it out of line with its heading. */
+    .section-link {
+        min-height: 44px;
+    }
+
+    /* The scrim covers the whole viewport, so it is always mounted here and
+       toggled by opacity/visibility rather than display. */
     .nav-scrim {
         display: block;
         opacity: 0;
@@ -285,11 +379,19 @@ section > h2 {
     /* Sidebar is off-canvas here, so it no longer occupies body space */
     body {
         padding-left: 0;
+        /* body is display:flex in a row so main can centre itself in the space
+           left by the fixed sidebar. With the sidebar out of flow that row
+           would place the app bar BESIDE main instead of above it, squeezing
+           main to roughly half the viewport. Stacking restores the intended
+           order. Both .app-bar and main are direct children of body. */
+        flex-direction: column;
     }
 
     main {
-        /* Room for the fixed nav toggle */
-        padding: 4.5rem 1.25rem 1.25rem;
+        /* The app bar is in flow and supplies its own height, so the old 4.5rem
+           of top padding is gone. The bottom padding reserves the tab bar plus
+           the home-indicator inset, so the last card is never trapped under it. */
+        padding: 1rem 1.25rem calc(var(--tab-bar-total) + 1.5rem);
     }
 
     .section-header {

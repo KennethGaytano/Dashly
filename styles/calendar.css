@@ -17,10 +17,22 @@
     margin-bottom: 1rem;
 }
 
+/* The month label is the widest thing in this row, so it takes the space it
+   needs and the prev/next buttons stay at their natural size. Without the
+   flex-basis the label compressed to two lines ("September" / "2026") at
+   390px and pushed the Next button past the viewport edge at 320px. */
 .calendar-header h3 {
     font-size: 1.1rem;
     font-weight: 600;
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: center;
+    white-space: nowrap;
     /* Announce month changes politely to screen readers */
+}
+
+.calendar-header .btn {
+    flex: 0 0 auto;
 }
 
 .calendar-day-label {
@@ -37,6 +49,10 @@
 .calendar-day {
     width: 100%;
     aspect-ratio: 1;
+    /* 44px minimum target. At 320px the seven tracks are ~37px wide, so the
+       min-height is what actually governs there; aspect-ratio only applies
+       when the track is wider than it is tall. */
+    min-height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -99,8 +115,10 @@
     gap: 0.5rem; flex-wrap: wrap;
 }
 .event-item-text { flex: 1 1 10rem; min-width: 0; }
-.event-item-title { font-weight: 600; color: var(--text-primary); }
-.event-item-meta { font-size: 0.8rem; color: var(--text-secondary); }
+/* User text: a pasted URL has no break opportunity and would otherwise
+   widen the whole page. See the note on .task-text. */
+.event-item-title { font-weight: 600; color: var(--text-primary); overflow-wrap: anywhere; }
+.event-item-meta { font-size: 0.8rem; color: var(--text-secondary); overflow-wrap: anywhere; }
 .event-item-actions { display: flex; gap: 0.35rem; flex-shrink: 0; }
 .event-item-actions .btn-icon { flex: 0 0 44px; min-width: 44px; min-height: 44px; }
 .event-form .btn-icon + .btn-icon,
@@ -110,16 +128,138 @@
     text-transform: uppercase; letter-spacing: 0.05em;
     padding: 0.75rem 0.75rem 0.25rem; margin-top: 0.25rem;
 }
+/* ===== Event form =====
+   These were inline style attributes, which no media query can override --
+   that is exactly why the form stayed ragged on a phone (the Time field and
+   the Add button shared a row, and Cancel was orphaned below them). Moved
+   here so the layout can actually respond.
+
+   Widths are flex-basis hints, not hard minimums, so the row reflows rather
+   than forcing a horizontal scroll. */
+.event-form .form-row-primary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+.event-form .form-row-secondary {
+    margin-top: 0.5rem;
+}
+
+.event-field-title { flex: 1 1 12rem; }
+.event-field-date  { flex: 0 1 9rem; }
+.event-field-time  { flex: 0 1 8rem; }
+.event-field-wide  { flex: 1 1 14rem; }
+
+.event-form .btn-submit,
+.event-form .btn-cancel {
+    white-space: nowrap;
+}
+
 .edit-banner { background: var(--accent-glow); color: var(--text-primary);
     padding: 0.5rem; border-radius: var(--radius-sm); font-size: 0.9rem; }
-@media (min-width: 640px) {
-    .form-row { display: grid; grid-template-columns: minmax(0,2fr) 1fr 1fr auto auto; gap: 0.75rem; align-items: end; }
-    .form-row input[type="date"], .form-row input[type="time"] { width: 100%; }
+
+/* Phone: one field per row, actions stacked full width. A date and a time
+   side by side leaves neither enough width for its own value on a 320px
+   screen, so they stack with everything else. */
+@media (max-width: 640px) {
+    .event-field-title,
+    .event-field-date,
+    .event-field-time,
+    .event-field-wide {
+        flex: 1 1 100%;
+    }
+
+    .event-form .btn-submit,
+    .event-form .btn-cancel {
+        flex: 1 1 100%;
+    }
+}
+
+/* Tablet: two columns, which is wider than one but not wide enough for the
+   five-across desktop grid. */
+@media (min-width: 641px) and (max-width: 768px) {
+    .event-field-title,
+    .event-field-wide {
+        flex: 1 1 100%;
+    }
+
+    .event-field-date,
+    .event-field-time {
+        flex: 1 1 0;
+    }
+
+    .event-form .btn-submit,
+    .event-form .btn-cancel {
+        flex: 1 1 100%;
+    }
+}
+
+/* Desktop: the five-across grid, matching the rows the design was built
+   around. Anchored to 769px so it can never overlap the app's own
+   single-column mobile rule for .form-row. */
+@media (min-width: 769px) {
+    .event-form .form-row-primary {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) 1fr 1fr auto auto;
+        gap: 0.75rem;
+        align-items: end;
+    }
+
+    .event-form .form-row-primary input[type="date"],
+    .event-form .form-row-primary input[type="time"] {
+        width: 100%;
+    }
+
     /* Second row is Notes + Link only, so it needs its own track count.
        Align to the top: the Link group carries help text below its input, and
        end-aligning would drop that input below the Notes one. */
-    .form-row.form-row-secondary { grid-template-columns: minmax(0,1fr) minmax(0,1fr); align-items: start; }
+    .event-form .form-row-secondary {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 0.75rem;
+        align-items: start;
+    }
 }
+/* Below 480px the month label plus two labelled buttons cannot share a row:
+   the label is nowrap, so something has to give. The words "Prev"/"Next" are
+   redundant beside the arrow and the buttons already carry
+   aria-label="Previous month"/"Next month", so they are dropped and the arrows
+   keep their own font-size. */
+@media (max-width: 480px) {
+    .calendar-header h3 {
+        font-size: 1rem;
+    }
+
+    .calendar-header .btn {
+        font-size: 0;
+        padding: 0.6rem 0.7rem;
+    }
+
+    .calendar-header .btn span {
+        font-size: 1rem;
+    }
+}
+
+.event-item-link {
+    display: inline-block;
+    margin-top: 0.2rem;
+    font-size: 0.8rem;
+    color: var(--accent);
+    overflow-wrap: anywhere;
+}
+
+/* Standalone element on its own line, so the inline-target exemption does not
+   apply. Measured 20px, under even the 24px WCAG 2.2 AA minimum. */
+@media (max-width: 768px) {
+    .event-item-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+    }
+}
+
 .event-item-link {
     display: inline-block; margin-top: 0.2rem;
     font-size: 0.8rem; color: var(--accent);

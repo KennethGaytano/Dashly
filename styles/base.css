@@ -32,7 +32,28 @@
     --transition: 0.2s ease;
     --sidebar-width: 240px;
     --focus-ring: 0 0 0 3px var(--accent-glow);
+
+    /* ===== Mobile chrome =====
+       The app bar and tab bar only exist at the mobile breakpoint, so their
+       dimensions live here rather than being repeated in layout.css.
+
+       The two env() reads resolve to 0 on any browser without a display cutout,
+       which keeps the safe-area maths valid everywhere else. --app-safe-top is
+       the notch inset; --app-safe-bottom is the home-indicator inset. */
+    --app-bar-height: 3.25rem;
+    --tab-bar-height: 3.5rem;
+    --app-safe-top: env(safe-area-inset-top, 0px);
+    --app-safe-bottom: env(safe-area-inset-bottom, 0px);
+    /* Total height the tab bar occupies, notch included. main reserves this so
+       the last card is never trapped underneath it. */
+    --tab-bar-total: calc(var(--tab-bar-height) + var(--app-safe-bottom));
 }
+
+/* Z-index ladder. Every fixed layer names its rung so the mobile app bar and
+   tab bar can be slotted in without disturbing the stacking order:
+     modal 1000 < toast 2000 < scrim 450 < drawer 500 < skip link 3000
+   The scrim sits above the app bar (200) and the tab bar (340) so opening the
+   drawer dims the whole page, not just the content column. */
 
 /* ===== Custom scrollbar (all pages) ===== */
 ::-webkit-scrollbar { width: 8px; height: 8px; }

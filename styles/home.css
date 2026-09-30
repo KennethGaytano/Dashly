@@ -76,7 +76,23 @@
     font-size: 0.9rem;
 }
 
+/* 16px, not 0.9rem: iOS zooms the viewport on focus for anything smaller,
+   measured at 14.4px. */
+.pomodoro .minute-input {
+    font-size: 16px;
+}
+
 .pomodoro .minute-input:focus {
     outline: 2px solid var(--accent-light);
     outline-offset: 1px;
+}
+
+/* Focus/Break buttons measured 25px tall on a phone. The taller box keeps the
+   label centred rather than floating, and the wider padding stops the two
+   buttons reading as a single control. */
+@media (max-width: 768px) {
+    .mode-btn {
+        min-height: 44px;
+        padding: 0.2rem 0.9rem;
+    }
 }

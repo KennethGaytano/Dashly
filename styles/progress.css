@@ -13,6 +13,13 @@
     font-size: 0.85rem;
 }
 
+/* Track and goal names are user text. Without a break opportunity a pasted
+   URL widens the whole page. See the note on .task-text. */
+.progress-label span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
 .progress-label span:first-child {
     font-weight: 500;
 }
@@ -100,6 +107,16 @@
     .nudge-input { width: 3.5rem; }
     .progress-item .progress-label { flex-wrap: wrap; gap: 0.25rem; }
     .ladder-readout { font-size: 0.78rem; }
+}
+
+/* Filter pills measured 29px tall on a phone. Centring the label in the
+   taller box keeps the text where it was rather than floating above it. */
+@media (max-width: 768px) {
+    .filter-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {

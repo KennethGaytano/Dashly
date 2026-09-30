@@ -32,12 +32,16 @@ button.note-card:hover {
     font-size: 0.95rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
+    /* User text: a pasted URL has no break opportunity and would otherwise
+       widen the whole page. See the note on .task-text. */
+    overflow-wrap: anywhere;
 }
 
 .note-card p {
     font-size: 0.85rem;
     color: var(--text-secondary);
     line-height: 1.5;
+    overflow-wrap: anywhere;
     display: -webkit-box;
     -webkit-line-clamp: 4;
     line-clamp: 4;
@@ -124,12 +128,25 @@ button.note-card:hover {
 }
 .color-swatch {
     display: inline-block;
+    position: relative;
     width: 24px;
     height: 24px;
     border-radius: 50%;
     border: 2px solid transparent;
     cursor: pointer;
     transition: transform 0.15s, border-color 0.15s;
+}
+/* The swatch is a 24px dot, but it is the only tap target for choosing a
+   note colour. A transparent overlay extends the hit area to 44px without
+   altering the drawn circle or the focus ring, which are both sized to it. */
+.color-swatch::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
 }
 .color-radio:focus + .color-swatch,
 .color-swatch:hover {
@@ -145,15 +162,28 @@ button.note-card:hover {
     display: flex;
     gap: 0.5rem;
     align-items: center;
+    /* Lets Save drop to its own line rather than crushing the field once the
+       row runs out of room. */
+    flex-wrap: wrap;
 }
+/* iOS zooms the viewport whenever a focused control renders below 16px, which
+   yanks the page sideways and leaves the user pinch-zoomed out. Measured at
+   15.2px here, and 14.4px for the Pomodoro minute field in home.css. Every
+   other control in the app inherits 16px from body. */
 .quick-note-form input {
-    flex: 1;
+    /* min-width:0 is the load-bearing part. A flex item defaults to
+       min-width:auto, which floors an <input> at its intrinsic width (roughly
+       the default size=20 character box). That refused to shrink and pushed
+       the whole page's layout viewport out to 431px on a 390px screen, which
+       in turn stretched every fixed layer including the tab bar. */
+    flex: 1 1 6rem;
+    min-width: 0;
     padding: 0.5rem;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     background: var(--bg-secondary);
     color: var(--text-primary);
-    font-size: 0.95rem;
+    font-size: 16px;
 }
 .quick-note-composer {
     margin-bottom: 1rem;
@@ -179,5 +209,13 @@ button.note-card:hover {
 @media (max-width: 768px) {
     .notes-grid {
         grid-template-columns: 1fr;
+    }
+
+    /* Standalone element on its own line, so the inline-target exemption does
+       not apply. Measured 20px, under even the 24px WCAG 2.2 AA minimum. */
+    .note-card .note-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
     }
 }

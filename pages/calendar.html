@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Dashboard — Calendar</title>
     <link rel="stylesheet" href="../styles/base.css">
     <link rel="stylesheet" href="../styles/layout.css">
@@ -14,10 +14,10 @@
 
     <a href="#main-content" class="skip-link">Skip to main content</a>
 
-    <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="sidebar" aria-label="Open navigation menu">
-        <span class="icon-open" aria-hidden="true">☰</span>
-        <span class="icon-close" aria-hidden="true">✕</span>
-    </button>
+    <header class="app-bar">
+        <span class="app-bar-mark" aria-hidden="true">📊</span>
+        <span class="app-bar-title">Calendar</span>
+    </header>
 
     <button type="button" class="nav-scrim" tabindex="-1" aria-hidden="true"></button>
 
@@ -84,28 +84,28 @@
             <div class="card">
                 <form id="eventForm" class="event-form" aria-label="Add or edit event">
                     <p id="editBanner" class="edit-banner" role="status" aria-live="polite" hidden></p>
-                    <div class="form-row" style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:flex-end;">
-                        <div class="form-group" style="flex:1;min-width:140px;">
+                    <div class="form-row form-row-primary">
+                        <div class="form-group event-field-title">
                             <label for="eventTitle" class="form-label">Title <span aria-label="required" aria-hidden="true">*</span></label>
                             <input type="text" id="eventTitle" placeholder="Meeting, deadline..." required aria-required="true" autocomplete="off" />
                         </div>
-                        <div class="form-group" style="min-width:120px;">
+                        <div class="form-group event-field-date">
                             <label for="eventDate" class="form-label">Date</label>
                             <input type="date" id="eventDate" required aria-required="true" />
                         </div>
-                        <div class="form-group" style="min-width:100px;">
+                        <div class="form-group event-field-time">
                             <label for="eventTime" class="form-label">Time</label>
                             <input type="time" id="eventTime" />
                         </div>
-                        <button type="submit" class="btn btn-primary" style="white-space:nowrap;">Add event</button>
-                        <button type="button" id="cancelEventBtn" class="btn btn-secondary" hidden>Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-submit">Add event</button>
+                        <button type="button" id="cancelEventBtn" class="btn btn-secondary btn-cancel" hidden>Cancel</button>
                     </div>
-                    <div class="form-row form-row-secondary" style="margin-top:0.5rem;">
-                        <div class="form-group" style="flex:2;min-width:180px;">
+                    <div class="form-row form-row-secondary">
+                        <div class="form-group event-field-wide">
                             <label for="eventDesc" class="form-label">Notes</label>
                             <input type="text" id="eventDesc" placeholder="Details..." />
                         </div>
-                        <div class="form-group" style="flex:2;min-width:180px;">
+                        <div class="form-group event-field-wide">
                             <label for="eventUrl" class="form-label">Link</label>
                             <input type="text" id="eventUrl" placeholder="https://…" inputmode="url" autocomplete="off" aria-describedby="eventUrlHelp" />
                             <p id="eventUrlHelp" class="form-help">Optional. “example.com/notes” works too — it opens in a new tab.</p>
@@ -143,6 +143,30 @@
         </div>
 
     </main>
+
+    <nav class="tab-bar" aria-label="Primary">
+        <a href="../index.html" class="tab">
+            <span class="tab-icon" aria-hidden="true">🏠</span>
+            <span class="tab-label">Home</span>
+        </a>
+        <a href="tasks.html" class="tab">
+            <span class="tab-icon" aria-hidden="true">✅</span>
+            <span class="tab-label">Tasks</span>
+        </a>
+        <a href="calendar.html" class="tab is-active" aria-current="page">
+            <span class="tab-icon" aria-hidden="true">📅</span>
+            <span class="tab-label">Calendar</span>
+        </a>
+        <a href="notes.html" class="tab">
+            <span class="tab-icon" aria-hidden="true">📝</span>
+            <span class="tab-label">Notes</span>
+        </a>
+        <button type="button" class="tab tab-more" aria-controls="sidebar" aria-expanded="false" aria-label="More pages, including Progress and Goals">
+            <span class="tab-icon" aria-hidden="true">⋯</span>
+            <span class="tab-label">More</span>
+        </button>
+    </nav>
+
 
     <script src="../scripts/link-utils.js"></script>
     <script src="../scripts/nav.js"></script>

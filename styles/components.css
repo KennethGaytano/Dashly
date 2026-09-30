@@ -278,10 +278,21 @@ button.stat-card:hover {
         grid-template-columns: 1fr;
     }
 
+    /* Every text field, select and textarea measured 38-41px tall, under the
+       44px target. Checkboxes and radios are excluded: the task checkbox is
+       deliberately 24px, and the note colour radios are visually hidden
+       0x0 inputs whose tap target is the swatch label beside them. */
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+        min-height: 44px;
+    }
+
     .toast {
         right: 1rem;
         left: 1rem;
-        bottom: 1rem;
+        /* Clears the tab bar so a confirmation never hides behind it. */
+        bottom: calc(var(--tab-bar-total) + 0.75rem);
     }
 
     .modal-content {
@@ -289,9 +300,75 @@ button.stat-card:hover {
     }
 }
 
+/* A centred dialog on a phone floats in the middle of the screen with dead
+   space above and below, and its buttons sit right where a thumb covers
+   them. The sheet drops to the bottom edge, fills the width, and puts the
+   actions under the thumb instead. Anchored with align-items:flex-end on the
+   overlay rather than auto margins, so the sheet is fully open on arrival. */
+@media (max-width: 768px) {
+    .modal {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .modal-content {
+        width: 100%;
+        max-width: 100%;
+        padding: 1.5rem 1.25rem calc(1.5rem + var(--app-safe-bottom));
+        border-radius: var(--radius) var(--radius) 0 0;
+        border-bottom: none;
+        box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Actions go full width and stack, so each is a reliable thumb target
+       rather than two short buttons side by side. */
+    .modal-actions {
+        flex-direction: column-reverse;
+    }
+
+    .modal-actions .btn {
+        width: 100%;
+    }
+}
+
+/* Below 480px a full-width stat card is mostly padding, and four of them
+   pushed the first real content (Today's Tasks) off the screen entirely.
+   The compact treatment keeps the 2-up grid from the rule above and trims
+   the icon, padding, and value scale so the overview fits in roughly half
+   the vertical space. */
 @media (max-width: 480px) {
     .stats-grid {
-        grid-template-columns: 1fr;
+        gap: 0.6rem;
+    }
+
+    .stat-card {
+        padding: 0.85rem 0.9rem;
+    }
+
+    .stat-card .stat-icon {
+        font-size: 1.15rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .stat-card h3 {
+        font-size: 0.68rem;
+        margin-bottom: 0.15rem;
+    }
+
+    .stat-card .stat-value {
+        font-size: 1.3rem;
+    }
+
+    /* 3rem of padding on each side plus a nowrap link ("Create your first
+       goal ->") overflowed the card at 320px. The link is allowed to wrap and
+       the padding gives way, which also lifts the message closer to the
+       content it refers to. */
+    .empty-state {
+        padding: 1.5rem 1rem;
+    }
+
+    .empty-state .section-link {
+        white-space: normal;
     }
 
     .form-actions {

@@ -153,10 +153,10 @@ Personal_DashBoard/
 │   └── goals.html       # Goals page
 ├── scripts/             # Browser JavaScript
 │   ├── home.js          # Home page task summary
-│   └── tasks.js         # Task CRUD and localStorage persistence
+│   └── nav.js           # Mobile drawer, tab bar, focus management
 ├── styles/
 │   ├── base.css         # Reset, design tokens, a11y utilities
-│   ├── layout.css       # Sidebar, nav toggle, page scaffolding
+│   ├── layout.css       # Sidebar, app bar, tab bar, page scaffolding
 │   ├── components.css   # Buttons, forms, modal, toast, stat cards
 │   ├── home.css         # Pomodoro timer
 │   ├── tasks.css        # Task list and task form
@@ -165,13 +165,20 @@ Personal_DashBoard/
 │   ├── progress.css     # Progress bars
 │   └── goals.css        # Goal cards, badges, milestones
 └── .claude/skills/run-personal-dashboard/
-    ├── SKILL.md         # This file
-    ├── server.mjs       # HTTP server for serving static files
-    ├── driver.mjs       # Interactive Playwright driver
-    ├── smoke.mjs        # Complete smoke test script
-    ├── task-tests.mjs   # Task management test suite
-    ├── package.json     # Node dependencies
-    └── node_modules/    # Playwright installed here
+    ├── SKILL.md            # This file
+    ├── server.mjs          # HTTP server for serving static files
+    ├── driver.mjs          # Interactive Playwright driver
+    ├── smoke.mjs           # Cross-page smoke test
+    ├── task-tests.mjs      # Task management test suite
+    ├── goals-tests.mjs     # Goals test suite
+    ├── progress-tests.mjs  # Progress page test suite
+    ├── mobile-audit.mjs    # Mobile geometry sweep, 6 widths x 6 pages
+    ├── mobile-nav-tests.mjs# App bar / tab bar / drawer behaviour
+    ├── layout-chain.mjs    # Names the element forcing a horizontal scroll
+    ├── width-sweep.mjs     # 16 widths x 6 pages, seeded with hostile content
+    ├── mobile-shots.mjs    # Quick mobile screenshots (no seeded data)
+    ├── package.json        # Node dependencies
+    └── node_modules/       # Playwright installed here
         └── playwright/
 ```
 
@@ -339,19 +346,26 @@ console.log('Checkbox persisted:', isChecked);
 
 ## Notes for Future Agents
 
-- **This is a prototype:** The app has no backend, no JavaScript behavior yet. You're testing layout and visual interactions.
+- **The app is fully functional.** It is a static site with no backend, but it has ten JavaScript modules driving real CRUD against `localStorage` — tasks, calendar events, notes, goals, progress tracks, and a Pomodoro timer. Any note here claiming there is "no JavaScript yet" is out of date.
 - **Screenshots are the ground truth:** When verifying a UI change, compare before/after screenshots. The PNG files in `$CLAUDE_JOB_DIR/tmp/` are your test output.
-- **The driver is your main tool:** Use `driver.mjs` to poke the app programmatically. Don't try to test by opening Chrome manually.
-- **Extend smoke.mjs for real tests:** As JavaScript gets added, update the smoke test to verify actual behavior, not just clicks.
+- **`mobile-audit.mjs` seeds data; `mobile-shots.mjs` does not.** The older screenshot script launches with empty `localStorage`, so every content view renders its empty state. Use the audit script for anything that depends on real content — it caught layout bugs the empty captures could never show.
+- **A full-page screenshot cannot show a `position: fixed` element honestly.** Playwright renders beyond the viewport without resizing, so the tab bar lands mid-image and looks like an overlap bug. `mobile-audit.mjs` handles this by hiding the bar for full-page shots and taking a separate viewport-only shot (`audit-<width>-chrome.png`) of the real chrome.
+- **The driver is for poking; the test scripts are for regression.** Use `driver.mjs` to explore, and the `*-tests.mjs` scripts to prove nothing broke.
 - **Port conflicts are common:** If tests fail mysteriously, check port 3000 first.
+- **When a page overflows horizontally, do not guess at the cause.** `layout-chain.mjs` brute-forces the DOM: it hides one element at a time and watches `window.innerWidth`, which names the origin. Two real bugs here (a flex `<input>` without `min-width: 0`, and `body` being `display: flex` in a row with a fixed sidebar) were both invisible to static reading and to measuring only the element you suspected.
+- **Never generate repeated markup with a PowerShell script.** The tab bars were built by interpolating a `$moreAct` variable into an HTML string, and the `class=" tab-more"` it emitted lost its leading space and had never included `tab` in the first place. The result was `class="tab-more"` on five pages while the hand-written home page had `class="tab tab-more"` — so the More button silently lost `.tab`'s flex sizing, column layout and `is-active` styling, and its label ran off the right edge on every page except the one that was typed by hand. A test that only counted `.tab` elements *on the home page* passed for days. Write shared markup into a file, or generate it from a template, and assert on every page.
+- **Seed hostile content, not just plausible content.** Every element that renders user text needs `overflow-wrap: anywhere`, because people paste URLs into titles and a single unbroken token has no break opportunity. `mobile-audit.mjs`'s realistic seed data hid this completely — `width-sweep.mjs` seeds one long no-space URL and exposed every page overflowing at every width, with `main` rendering 683px wide on a 320px screen.
 
 ---
 
 ## Summary
 
 - **Smoke test:** `cd .claude/skills/run-personal-dashboard && node smoke.mjs`
+- **Behaviour suites:** `node task-tests.mjs`, `node goals-tests.mjs`, `node progress-tests.mjs` — run one at a time, they all bind port 3000
+- **Mobile regression:** `node mobile-audit.mjs` (geometry across 6 widths), `node mobile-nav-tests.mjs` (app bar / tab bar / drawer behaviour), `node width-sweep.mjs` (16 widths, hostile content — run `SHOT=1 node width-sweep.mjs` for PNGs)
+- **Overflow diagnosis:** `node layout-chain.mjs [width]` — names the element forcing a horizontal scroll
 - **Screenshots:** `$CLAUDE_JOB_DIR/tmp/*.png`
 - **Interactive driver:** `node driver.mjs <command>`
 - **Manual testing:** `node server.mjs` then open `http://localhost:3000/`
 - **No build required:** Static HTML/CSS app
-- **Gotchas:** No JS behavior yet, port 3000 conflicts, Windows paths, static data only
+- **Gotchas:** port 3000 conflicts, Windows paths, per-device `localStorage`, empty-state captures from `mobile-shots.mjs`

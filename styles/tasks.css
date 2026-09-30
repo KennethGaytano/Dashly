@@ -36,6 +36,20 @@
     position: relative;
 }
 
+/* 24x24 meets the WCAG 2.2 target-size minimum, and the comment above is the
+   existing deliberate choice, so the drawn box is left alone. A transparent
+   overlay still widens the tappable area to 44px, the same trick the note
+   colour swatches use, so finger taps stop missing. */
+.task-item input[type="checkbox"]::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+}
+
 .task-item input[type="checkbox"]:checked {
     background: var(--accent);
     border-color: var(--accent);
@@ -66,6 +80,14 @@
     font-weight: 500;
     line-height: 1.6;
     text-align: left;
+    /* Titles hold whatever the user typed, and people paste URLs. A single
+       unbroken token has no break opportunity, so without this the task list
+       sets the page's min-content width, the document scrolls sideways, and
+       every position:fixed layer -- including the tab bar -- is stretched to
+       the wider box and runs off the screen. `anywhere` rather than
+       `break-word` because it also lowers the min-content contribution, so
+       the container can shrink in the first place. */
+    overflow-wrap: anywhere;
 }
 
 .task-priority {
@@ -99,7 +121,11 @@
 }
 
 .task-add input {
+    /* Same min-width:auto trap as the quick-note field. Currently unused by
+       any page, but leaving it would reintroduce the bug if it is ever wired
+       back up. */
     flex: 1;
+    min-width: 0;
 }
 
 /* ===== Enhanced Task Items ===== */
@@ -122,6 +148,7 @@
     line-height: 1.5;
     margin: 0.15rem 0 0 0;
     text-align: left;
+    overflow-wrap: anywhere;
 }
 
 .task-due-date {
@@ -201,16 +228,29 @@
 @media (max-width: 768px) {
     .task-item {
         flex-wrap: wrap;
+        /* Top-align the checkbox with the first line of the title. Centring it
+           (the desktop value) left it floating beside the middle of a
+           multi-line title, description and due date. */
+        align-items: flex-start;
+        gap: 0.65rem 0.75rem;
     }
 
-    .task-content {
-        width: 100%;
-        order: 2;
-        margin-top: 0.5rem;
-    }
-
+    /* .task-content keeps flex:1, whose basis of 0 means a width:100% here
+       would be ignored anyway. It stays on the first line beside the
+       checkbox, which is the correct tap pattern: the control that completes
+       the task sits next to the task's name. The old width:100%/order:2 pair
+       was intended to push it onto its own row but never took effect. */
     .task-actions {
         order: 3;
         margin-top: 0.5rem;
+    }
+
+    /* The link is a standalone element on its own line, not a link inside a
+       sentence, so the inline-target exemption does not apply. It measured
+       20px, which is under even the 24px WCAG 2.2 AA minimum. */
+    .task-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
     }
 }
