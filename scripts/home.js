@@ -127,32 +127,12 @@
       return;
     }
 
-    // Include completed tasks in ranking so finished work stays visible
-    const allTasks = tasks;
-
-    // Put overdue and due-today tasks first, then fill any remaining slots
-    // with future, undated, or completed tasks.
-    const priorityTasks = tasks
-      .filter(task => (isTaskOverdue(task) || isTaskDueToday(task)) && task.status !== 'completed')
+    const displayTasks = tasks
+      .filter(task => task.status !== 'completed' && isTaskDueToday(task))
       .sort(compareTaskDeadlines);
-    const fallbackTasks = tasks
-      .filter(task => task.status !== 'completed' && !isTaskOverdue(task) && !isTaskDueToday(task))
-      .sort(compareTaskDeadlines);
-    const completedTasks = tasks
-      .filter(task => task.status === 'completed')
-      .sort(compareTaskDeadlines);
-
-    // Show at most 3 tasks in total. Completed tasks are ranked last but
-    // still earn a slot, so a finished task stays visible on the home page.
-    const MAX_TASKS = 3;
-    const displayTasks = [
-      ...priorityTasks,
-      ...fallbackTasks,
-      ...completedTasks
-    ].slice(0, MAX_TASKS);
 
     if (displayTasks.length === 0) {
-      container.innerHTML = '<p class="empty-state">No tasks yet. <a href="pages/tasks.html">Create your first task</a></p>';
+      container.innerHTML = '<p class="empty-state">Nothing due today. <a class="section-link" href="pages/tasks.html">View all tasks</a></p>';
       return;
     }
 
@@ -272,6 +252,7 @@
     // Toggle status
     task.status = task.status === 'completed' ? 'todo' : 'completed';
     task.updatedAt = new Date().toISOString();
+    task.completedAt = task.status === 'completed' ? task.updatedAt : '';
 
     // Save back to localStorage
     try {

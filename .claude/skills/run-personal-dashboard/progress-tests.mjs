@@ -143,30 +143,13 @@ async function runTests() {
     );
 
     // -------------------------------------------------------------
-    // Test 3: Seeding
+    // Test 3: Empty State Without Sample Data
     // -------------------------------------------------------------
-    console.log('\n--- Test Group 3: Seeded Starting Values ---');
-    const seededCount = await page.locator('#skillsList .progress-item').count();
-    assert(seededCount === 8, `Empty storage re-seeds 8 tracks (got ${seededCount})`);
-    const seededSkills = await getStorage(page, 'dashboard_skills');
-    const seededProjects = await getStorage(page, 'dashboard_projects');
-    assert(seededSkills.length === 5, 'Seeded 5 skills into dashboard_skills');
-    assert(seededProjects.length === 3, 'Seeded 3 projects into dashboard_projects');
-    const offLadder = await page.$$eval(
-      '#skillsList .progress-bar',
-      (bars, steps) => bars.map((b) => Number(b.getAttribute('aria-valuenow'))).filter((v) => !steps.includes(v)),
-      STEPS
-    );
-    assert(offLadder.length === 0, 'Every seeded track sits on a ladder step');
-    const readout = await page
-      .locator('#skillsList .progress-item')
-      .first()
-      .locator('.ladder-readout')
-      .textContent();
-    assert(
-      /^Step \d+ of 8 · \d+%$/.test(readout.trim()),
-      `Ladder readout formatted ("${readout.trim()}")`
-    );
+    console.log('\n--- Test Group 3: Empty State Without Sample Data ---');
+    assert((await page.locator('#skillsList .progress-item').count()) === 0, 'Empty storage does not create sample tracks');
+    assert(await getStorage(page, 'dashboard_skills') === null, 'Empty view does not write sample skills');
+    assert(await getStorage(page, 'dashboard_projects') === null, 'Empty view does not write sample projects');
+    assert((await page.locator('#skillsList .empty-state').textContent()).includes('No skills or projects yet'), 'Track empty state gives a next step');
 
     // -------------------------------------------------------------
     // Test 4: Add a Skill
@@ -181,6 +164,8 @@ async function runTests() {
       skillsAfterAdd.some((s) => s.name === 'TypeScript' && s.progress === 70 && s.type === 'skill'),
       'Skill persisted to dashboard_skills with type=skill'
     );
+    const readout = await page.locator(`#skillsList .progress-item[data-id="${skillId}"] .ladder-readout`).textContent();
+    assert(/^Step \d+ of 8 · \d+%$/.test(readout.trim()), 'Ladder readout is formatted');
 
     // -------------------------------------------------------------
     // Test 5: Add a Project
@@ -195,8 +180,8 @@ async function runTests() {
       'Project persisted to dashboard_projects (not dashboard_skills)'
     );
     assert(
-      (await page.locator('#skillsList .progress-item').count()) === 10,
-      'List now renders 10 tracks (5+1 skills, 3+1 projects)'
+      (await page.locator('#skillsList .progress-item').count()) === 2,
+      'List groups the one saved skill and one saved project without sample tracks'
     );
 
     // -------------------------------------------------------------
@@ -258,7 +243,7 @@ async function runTests() {
       !projectsAfterDelete.some((p) => p.name === 'CLI Tool'),
       'Deleted project removed from dashboard_projects'
     );
-    assert(projectsAfterDelete.length === 3, 'Project count drops back to the 3 seeded entries');
+    assert(projectsAfterDelete.length === 0, 'Deleting the project leaves no seeded project entries');
     // The delete handler filters by id in BOTH stores; ids are unique per store,
     // so deleting a project must leave every skill intact.
     const skillsAfterDelete = await getStorage(page, 'dashboard_skills');
@@ -266,7 +251,7 @@ async function runTests() {
       ['TypeScript', 'Edge Zero', 'Edge Full'].every((n) => skillsAfterDelete.some((s) => s.name === n)),
       'Deleting a project does not remove skills from the other store'
     );
-    assert(skillsAfterDelete.length === 8, 'All 8 skills still stored after a project delete');
+    assert(skillsAfterDelete.length === 3, 'The three user-created skills remain after a project delete');
 
     // -------------------------------------------------------------
     // Test 10: Derived Weekly Stats
@@ -275,7 +260,8 @@ async function runTests() {
     const today = new Date().toISOString();
     await setStorage(page, {
       dashboard_tasks: [
-        { id: 't1', title: 'Seed task', status: 'completed', createdAt: today, updatedAt: today }
+        { id: 't1', title: 'Completed this week', status: 'completed', completedAt: today, createdAt: today, updatedAt: today },
+        { id: 't2', title: 'Edited this week, completed earlier', status: 'completed', completedAt: '2020-01-01T12:00:00.000Z', updatedAt: today }
       ],
       dashboard_pomodoro_sessions: [
         { id: 's1', mode: 'focus', startedAt: today, completedAt: today, minutes: 30 },
@@ -284,10 +270,10 @@ async function runTests() {
     });
     await page.reload();
 
-    assert((await page.textContent('#statTasksDone')).trim() === '1', 'Tasks Done counts completed tasks in window');
-    assert((await page.textContent('#statPomodoros')).trim() === '2', 'Pomodoros counts focus sessions in window');
-    assert((await page.textContent('#statHoursStudied')).trim() === '1.0', 'Hours Studied sums session minutes (60m -> 1.0)');
-    assert((await page.textContent('#statStreak')).trim() === '1', 'Day Streak derives from today activity');
+    assert((await page.textContent('#statTasksDone')).trim() === '1 task', 'Task count uses completion dates, not later edits');
+    assert((await page.textContent('#statPomodoros')).trim() === '2 sessions', 'Focus session count includes its unit');
+    assert((await page.textContent('#statHoursStudied')).trim() === '1.0 hrs', 'Focus time sums session minutes with a unit');
+    assert((await page.textContent('#statStreak')).trim() === '1 day', 'Current streak includes its unit');
 
     // -------------------------------------------------------------
     // Test 11: Goals Read View & Filter
@@ -305,7 +291,7 @@ async function runTests() {
     assert((await page.locator('#goalsProgressList .goal-card').count()) === 3, 'All three goals render in the read view');
     const summary = await page.textContent('#goalsSummary');
     assert(
-      summary.includes('3 of 3 goals') && summary.includes('73% average progress'),
+      summary.includes('3 goals') && summary.includes('73% average progress'),
       `Summary reports count and average ("${summary.trim()}")`
     );
     assert(
@@ -329,7 +315,7 @@ async function runTests() {
       'aria-pressed moves to the active filter'
     );
     assert(
-      (await page.textContent('#goalsSummary')).includes('3 of 3 goals'),
+      (await page.textContent('#goalsSummary')).includes('3 goals'),
       'Summary still counts every goal regardless of the active filter'
     );
     await page.click('#filterRow button[data-filter="all"]');
@@ -346,7 +332,7 @@ async function runTests() {
       dashboard_goals: [
         { id: 'h1', title: 'Finished But Not Flagged', desc: '', progress: 100, status: 'active', milestones: [], createdAt: '2026-01-01' },
         { id: 'h2', title: 'All Milestones Done', desc: '', progress: 100, status: 'active', milestones: [{ text: 'only step', done: true }], createdAt: '2026-01-02' },
-        { id: 'h3', title: 'Still In Progress', desc: '', progress: 50, status: 'active', milestones: [{ text: 'step one', done: true }, { text: 'step two', done: false }], createdAt: '2026-01-03' }
+        { id: 'h3', title: 'Still In Progress', desc: '', progress: 100, status: 'active', milestones: [{ text: 'step one', done: true }, { text: 'step two', done: false }], createdAt: '2026-01-03' }
       ]
     });
     await page.reload();
@@ -394,7 +380,7 @@ async function runTests() {
     await setStorage(page, { dashboard_skills: [], dashboard_projects: [] });
     await page.reload();
     const tracksEmpty = await page.locator('#skillsList .empty-state').textContent();
-    assert(tracksEmpty.includes('No tracks yet'), 'Empty state shown when every track is removed');
+    assert(tracksEmpty.includes('No skills or projects yet'), 'Empty state shown when every track is removed');
 
     await page.setViewportSize({ width: 375, height: 667 });
     await page.waitForTimeout(300);
@@ -424,4 +410,3 @@ runTests().catch((err) => {
   console.error('Fatal test error:', err);
   process.exit(1);
 });
-

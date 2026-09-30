@@ -148,6 +148,16 @@
     gap: 0.5rem;
 }
 
+.milestone-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.add-milestone-btn {
+    margin-top: 0.5rem;
+}
+
 .milestone-row input[type="text"] {
     flex: 1 1 auto;
     width: 100%;

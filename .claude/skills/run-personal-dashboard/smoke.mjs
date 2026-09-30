@@ -66,6 +66,7 @@ async function runSmokeTest() {
     // 4. Test Interactive Elements
     console.log('4. Testing interactive elements on Tasks page...');
     await page.goto(`${BASE_URL}/pages/tasks.html`);
+    await page.click('[data-task-filter="all"]');
 
     // The add form is collapsed on load, so open it before typing.
     await page.click('#newTaskBtn');
@@ -109,6 +110,53 @@ async function runSmokeTest() {
     // 5. Test Pomodoro Timer on Home page
     console.log('5. Testing Pomodoro Timer on Home page...');
     await page.goto(`${BASE_URL}/index.html`);
+    const taskDates = await page.evaluate(() => {
+      const key = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return { today: key(today), tomorrow: key(tomorrow) };
+    });
+    await page.evaluate(({ today, tomorrow }) => {
+      localStorage.setItem('dashboard_tasks', JSON.stringify([
+        { id: 'home-later', title: 'Due later', status: 'todo', priority: 'medium', dueDate: today, dueTime: '17:00' },
+        { id: 'home-soon', title: 'Due soon', status: 'in_progress', priority: 'high', dueDate: today, dueTime: '09:00' },
+        { id: 'home-future', title: 'Due tomorrow', status: 'todo', priority: 'low', dueDate: tomorrow },
+        { id: 'home-undated', title: 'No deadline', status: 'todo', priority: 'low' },
+        { id: 'home-completed', title: 'Already done', status: 'completed', priority: 'low', dueDate: today }
+      ]));
+    }, taskDates);
+    await page.reload();
+
+    const homeTasks = await page.locator('#homeTaskList .task-text').allTextContents();
+    if (homeTasks.length !== 2 || homeTasks[0] !== 'Due soon' || homeTasks[1] !== 'Due later') {
+      throw new Error(`Today's task list included the wrong tasks: ${JSON.stringify(homeTasks)}`);
+    }
+    const taskCountText = await page.locator('.stat-card').filter({ hasText: 'Tasks' }).locator('.stat-value').textContent();
+    if (taskCountText !== '1/5') throw new Error(`Task overview count should be 1/5, got ${taskCountText}`);
+
+    await page.locator('#homeTaskList input[type="checkbox"]').first().click();
+    const completedFromHome = await page.evaluate(() => {
+      const task = JSON.parse(localStorage.getItem('dashboard_tasks')).find(item => item.id === 'home-soon');
+      return { status: task.status, completedAt: task.completedAt };
+    });
+    if (completedFromHome.status !== 'completed' || !completedFromHome.completedAt) {
+      throw new Error('Completing a home task did not record its completion time');
+    }
+    if ((await page.locator('#homeTaskList .task-item').count()) !== 1) {
+      throw new Error('Completed task remained in Today’s open task list');
+    }
+    await page.evaluate(() => {
+      const tasks = JSON.parse(localStorage.getItem('dashboard_tasks'));
+      localStorage.setItem('dashboard_tasks', JSON.stringify(tasks.filter(task => task.id !== 'home-later')));
+    });
+    await page.reload();
+    if ((await page.locator('#homeTaskList .task-item').count()) !== 0 ||
+        !(await page.locator('#homeTaskList .empty-state').textContent()).includes('Nothing due today')) {
+      throw new Error('The empty due-today state did not render correctly');
+    }
+    console.log('   Verified only open tasks due today are shown');
+
     await page.click('.pomodoro button.btn-primary');
     console.log('   Clicked Start on Pomodoro timer');
 

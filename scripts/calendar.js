@@ -38,7 +38,7 @@
    * leading days from the previous month and trailing days
    * from the next so every week is complete.
    */
-  function buildDays(year, month) {
+  function buildDays(year, month, eventCounts) {
     const firstOfMonth = new Date(year, month, 1);
     const start = new Date(year, month, 1 - firstOfMonth.getDay());
 
@@ -52,7 +52,7 @@
         dayNumber: date.getDate(),
         isCurrentMonth: date.getMonth() === month,
         isToday: isSameDay(date, today),
-        hasEvent: (typeof window.getCalendarEventDates === 'function' ? window.getCalendarEventDates() : EVENTS).has(toKey(date.getFullYear(), date.getMonth(), date.getDate()))
+        eventCount: eventCounts.get(toKey(date.getFullYear(), date.getMonth(), date.getDate())) || 0
       });
     }
 
@@ -68,7 +68,10 @@
 
     label.textContent = `${MONTH_NAMES[viewMonth]} ${viewYear}`;
 
-    const days = buildDays(viewYear, viewMonth);
+    const eventCounts = typeof window.getCalendarEventCounts === 'function'
+      ? window.getCalendarEventCounts()
+      : new Map();
+    const days = buildDays(viewYear, viewMonth, eventCounts);
 
     const headers = DAY_LABELS.map(day => `
       <div class="calendar-day-label" role="columnheader" aria-label="${day}">${day}</div>
@@ -78,7 +81,7 @@
       const classes = ['calendar-day'];
       if (!day.isCurrentMonth) classes.push('other-month');
       if (day.isToday) classes.push('today');
-      if (day.hasEvent) classes.push('has-event');
+      if (day.eventCount > 0) classes.push('has-event');
 
       const dateKey = toKey(day.date.getFullYear(), day.date.getMonth(), day.dayNumber);
       const longDate = day.date.toLocaleDateString('en-US', {
@@ -89,7 +92,7 @@
       // carries the full date, today state, and event presence.
       const state = [
         day.isToday ? 'today' : '',
-        day.hasEvent ? 'has events' : ''
+        day.eventCount ? `${day.eventCount} ${day.eventCount === 1 ? 'event' : 'events'}` : ''
       ].filter(Boolean).join(', ');
 
       return `
@@ -122,9 +125,20 @@
 
     const prev = document.getElementById('prevMonth');
     const next = document.getElementById('nextMonth');
+    const today = document.getElementById('todayMonth');
 
     if (prev) prev.addEventListener('click', () => shiftMonth(-1));
     if (next) next.addEventListener('click', () => shiftMonth(1));
+    if (today) {
+      today.addEventListener('click', () => {
+        const now = new Date();
+        viewYear = now.getFullYear();
+        viewMonth = now.getMonth();
+        render();
+        const todayButton = document.querySelector('#calendarGrid .calendar-day.today');
+        if (todayButton) todayButton.click();
+      });
+    }
 
     // Day selection is deliberately NOT handled here. calendar-events.js owns
     // it, because selecting a day has to update the form, the day list and the

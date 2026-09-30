@@ -78,6 +78,8 @@ async function runTests() {
     const completedEmpty = await page.locator('#completedList .empty-state').textContent();
     assert(completedEmpty.includes('No completed tasks'), 'Completed section shows empty state');
 
+    await page.click('[data-task-filter="all"]');
+
     // -------------------------------------------------------------
     // Test 2: Form Validation
     // -------------------------------------------------------------
@@ -172,9 +174,17 @@ async function runTests() {
     await page.selectOption('#taskPriority', 'low');
     await page.click('#submitBtn');
 
-    await page.waitForSelector('#completedList .task-item');
+    // The Completed list lives inside a collapsed <details>, so the item is
+    // attached but not visible until the summary is clicked. Wait on
+    // 'attached' here and assert the collapsed state separately below.
+    await page.waitForSelector('#completedList .task-item', { state: 'attached' });
     const completedCount = await page.locator('#completedList .task-item').count();
     assert(completedCount === 1, 'Completed list has 1 task');
+    assert(!(await page.locator('#completedDisclosure').evaluate(el => el.open)), 'Completed tasks start collapsed');
+    const storedCompletedTask = await page.evaluate(() => {
+      return JSON.parse(localStorage.getItem('dashboard_tasks')).find(task => task.title === 'Setup Dev Environment');
+    });
+    assert(Boolean(storedCompletedTask.completedAt), 'Newly completed tasks record their completion time');
 
     // -------------------------------------------------------------
     // Test 5: Toggle Status via Checkbox
@@ -189,12 +199,17 @@ async function runTests() {
     assert(newCompletedCount === 2, 'Toggling checkbox moves task to Completed list');
 
     // Toggle it back -> Should move to To Do
+    await page.locator('#completedDisclosure > summary').click();
     const firstCompletedCheckbox = page.locator('#completedList .task-item input[type="checkbox"]').first();
     await firstCompletedCheckbox.click();
 
     await page.waitForFunction(() => document.querySelectorAll('#todoList .task-item').length === 1);
     const newTodoCount = await page.locator('#todoList .task-item').count();
     assert(newTodoCount === 1, 'Unchecking task moves it back to To Do list');
+    const toggledTask = await page.evaluate(() => {
+      return JSON.parse(localStorage.getItem('dashboard_tasks')).find(task => task.title === 'Finish Q4 report');
+    });
+    assert(!toggledTask.completedAt, 'Completion timestamp clears when task is reopened');
 
     // -------------------------------------------------------------
     // Test 6: Edit Task
@@ -300,16 +315,52 @@ async function runTests() {
     assert(persistedCompleted === 'Setup Dev Environment', `Persisted completed task loaded: "${persistedCompleted}"`);
 
     // -------------------------------------------------------------
-    // Test 10: XSS Sanitization
+    // Test 10: Today-First Overview, Filters, and Completion Timestamp
     // -------------------------------------------------------------
-    console.log('\n--- Test Group 10: Input Sanitization / Security ---');
+    console.log('\n--- Test Group 10: Today-First Task Overview ---');
+    const today = await page.evaluate(() => {
+      const date = new Date();
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    });
+    const yesterday = await page.evaluate(() => {
+      const date = new Date();
+      date.setDate(date.getDate() - 1);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    });
+    await page.evaluate(({ todayDate, yesterdayDate }) => {
+      const tasks = JSON.parse(localStorage.getItem('dashboard_tasks'));
+      tasks.push(
+        { id: 'test-due-today', title: 'Due today', status: 'todo', priority: 'low', dueDate: todayDate, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: 'test-overdue', title: 'Overdue task', status: 'in_progress', priority: 'high', dueDate: yesterdayDate, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+      );
+      localStorage.setItem('dashboard_tasks', JSON.stringify(tasks));
+    }, { todayDate: today, yesterdayDate: yesterday });
+    await page.reload();
+
+    const todoTitles = await page.locator('#todoList .task-item .task-text').allTextContents();
+    assert(todoTitles[0] === 'Due today', 'Due-today work sorts ahead of later tasks');
+    assert(await page.locator('#dueTodayCount').textContent() === '1', 'Today count reflects open tasks due today');
+    assert(await page.locator('#overdueCount').textContent() === '1', 'Overdue count reflects overdue open tasks');
+    await page.click('[data-task-filter="today"]');
+    assert(await page.locator('#todoList .task-item:visible').count() === 1, 'Today filter includes due-today tasks');
+    assert(await page.locator('#inProgressList .task-item:visible').count() === 1, 'Today filter also includes overdue in-progress work');
+    await page.click('[data-task-filter="overdue"]');
+    assert(await page.locator('#todoList .task-item:visible').count() === 0, 'Overdue filter excludes due-today tasks');
+    assert(await page.locator('#inProgressList .task-item:visible').count() === 1, 'Overdue filter keeps overdue tasks visible');
+    await page.click('[data-task-filter="all"]');
+    assert(await page.locator('#todoList .task-item:visible').count() > 1, 'All filter restores the full task list');
+
+    // -------------------------------------------------------------
+    // Test 11: XSS Sanitization
+    // -------------------------------------------------------------
+    console.log('\n--- Test Group 11: Input Sanitization / Security ---');
     await openTaskForm();
     await page.fill('#taskTitle', '<script>alert("xss")</script>Secure Task');
     await page.fill('#taskDescription', '<img src="x" onerror="alert(1)">Description');
     await page.click('#submitBtn');
 
     // Verify script did not execute, rendered safely
-    const xssTask = await page.locator('#todoList .task-item').last();
+    const xssTask = page.locator('#todoList .task-item').filter({ hasText: 'Secure Task' }).first();
     const xssTitleText = await xssTask.locator('.task-text').innerHTML();
     assert(xssTitleText.includes('&lt;script&gt;'), 'HTML tags sanitized in title');
 

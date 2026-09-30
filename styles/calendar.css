@@ -13,22 +13,19 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem;
+    gap: 0.35rem;
     margin-bottom: 1rem;
 }
 
-/* The month label is the widest thing in this row, so it takes the space it
-   needs and the prev/next buttons stay at their natural size. Without the
-   flex-basis the label compressed to two lines ("September" / "2026") at
-   390px and pushed the Next button past the viewport edge at 320px. */
-.calendar-header h3 {
+/* Keep the month centered between navigation controls without allowing it to
+   wrap or force the compact Today button outside the calendar. */
+.calendar-header h2 {
     font-size: 1.1rem;
     font-weight: 600;
     flex: 1 1 auto;
     min-width: 0;
     text-align: center;
     white-space: nowrap;
-    /* Announce month changes politely to screen readers */
 }
 
 .calendar-header .btn {
@@ -75,6 +72,10 @@
     box-shadow: inset 0 0 0 2px var(--accent-light);
 }
 
+.calendar-day.today.selected {
+    box-shadow: inset 0 0 0 2px #fff;
+}
+
 .calendar-day.today {
     background: var(--accent);
     color: #fff;
@@ -109,6 +110,20 @@
 }
 
 /* ===== Event list / form ===== */
+.selected-day-heading {
+    min-width: 0;
+}
+
+.selected-day-heading h2 {
+    overflow-wrap: anywhere;
+}
+
+.selected-day-heading p {
+    margin: 0.15rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
 .event-item {
     display: flex; justify-content: space-between; align-items: center;
     padding: 0.75rem; border-bottom: 1px solid var(--border);
@@ -228,17 +243,22 @@
    aria-label="Previous month"/"Next month", so they are dropped and the arrows
    keep their own font-size. */
 @media (max-width: 480px) {
-    .calendar-header h3 {
+    .calendar-header h2 {
         font-size: 1rem;
     }
 
     .calendar-header .btn {
         font-size: 0;
-        padding: 0.6rem 0.7rem;
+        padding: 0.6rem 0.45rem;
     }
 
     .calendar-header .btn span {
         font-size: 1rem;
+    }
+
+    .calendar-header .calendar-today {
+        font-size: 0.75rem;
+        padding: 0.6rem 0.5rem;
     }
 }
 

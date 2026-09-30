@@ -50,7 +50,12 @@
 
         <header>
             <h1>Tasks <span aria-hidden="true">✅</span></h1>
-            <p>Manage and track your to-do list.</p>
+            <p>Choose what to focus on today.</p>
+            <div class="task-summary" id="taskSummary" aria-label="Task overview">
+                <span><strong id="dueTodayCount">0</strong> due today</span>
+                <span><strong id="overdueCount">0</strong> overdue</span>
+                <span><strong id="completedWeekCount">0</strong> completed this week</span>
+            </div>
         </header>
 
         <!-- Add/Edit Task Form -->
@@ -159,7 +164,15 @@
             </div>
         </section>
 
-        <!-- Task Lists Grouped by Status -->
+        <nav class="task-filters" aria-label="Filter tasks">
+            <button type="button" class="task-filter is-active" data-task-filter="today" aria-pressed="true">Today</button>
+            <button type="button" class="task-filter" data-task-filter="all" aria-pressed="false">All</button>
+            <button type="button" class="task-filter" data-task-filter="overdue" aria-pressed="false">Overdue</button>
+        </nav>
+
+        <p class="task-filter-empty empty-state" id="taskFilterEmpty" hidden></p>
+
+        <!-- Open tasks are ordered by urgency, with today's and overdue work first. -->
         <section>
             <h2>To Do</h2>
             <div id="todoList" class="task-list">
@@ -174,12 +187,15 @@
             </div>
         </section>
 
-        <section>
-            <h2>Completed</h2>
+        <details class="completed-disclosure" id="completedDisclosure">
+            <summary>
+                <span>Completed</span>
+                <span class="completed-count" id="completedCount">0</span>
+            </summary>
             <div id="completedList" class="task-list">
                 <!-- Dynamically populated -->
             </div>
-        </section>
+        </details>
 
     </main>
 

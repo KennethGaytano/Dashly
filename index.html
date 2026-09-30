@@ -55,36 +55,13 @@
             <p>Welcome to your personal dashboard.</p>
         </header>
 
-        <section>
-            <h2>Overview</h2>
-            <div class="stats-grid">
-                <a href="pages/tasks.html" class="stat-card">
-                    <div class="stat-icon" aria-hidden="true">✅</div>
-                    <h3>Tasks</h3>
-                    <p class="stat-value">0/5</p>
-                </a>
-                <a href="pages/progress.html" class="stat-card">
-                    <div class="stat-icon" aria-hidden="true">⏱️</div>
-                    <h3>Study Time</h3>
-                    <p class="stat-value" id="homeStudyTime">0h 00m</p>
-                </a>
-                <a href="pages/progress.html" class="stat-card">
-                    <div class="stat-icon" aria-hidden="true">📁</div>
-                    <h3>Projects</h3>
-                    <p class="stat-value" id="homeProjects">3</p>
-                </a>
-                <a href="pages/progress.html" class="stat-card">
-                    <div class="stat-icon" aria-hidden="true">🔥</div>
-                    <h3>Streak</h3>
-                    <p class="stat-value" id="homeStreak">7 days</p>
-                </a>
-            </div>
-        </section>
-
-        <div class="two-col">
-            <section>
+        <div class="two-col home-daily-grid">
+            <section class="home-task-section">
                 <div class="section-header section-header--stacked">
-                    <h2>Today's Tasks</h2>
+                    <div>
+                        <h2>Today's tasks</h2>
+                        <p class="home-section-note">Open tasks with a deadline today</p>
+                    </div>
                     <a href="pages/tasks.html" class="section-link">View all →</a>
                 </div>
                 <div class="card">
@@ -94,7 +71,7 @@
                 </div>
             </section>
 
-            <section>
+            <section class="home-timer-section">
                 <div class="section-header section-header--stacked">
                     <h2>Pomodoro</h2>
                     <div class="mode-switch" role="group" aria-label="Timer mode">
@@ -103,20 +80,57 @@
                     </div>
                 </div>
                 <div class="card pomodoro">
-                    <div class="timer-display" aria-live="polite" aria-atomic="true">25:00</div>
+                    <div class="timer-display" role="timer" aria-label="Time remaining">25:00</div>
+                    <progress id="timerProgress" class="timer-progress" value="0" max="1500" aria-label="Session progress"></progress>
+                    <p id="timerStatus" class="timer-status" role="status" aria-live="polite" aria-atomic="true">Ready when you are.</p>
                     <div class="timer-controls">
-                        <div class="minute-field">
-                            <label for="minuteInput" class="minute-label">Minutes</label>
-                            <input type="number" id="minuteInput" class="minute-input" min="1" max="120" value="25" />
-                        </div>
                         <div class="timer-buttons">
                             <button class="btn btn-primary">▶ Start</button>
                             <button class="btn btn-secondary">↺ Reset</button>
                         </div>
                     </div>
+                    <details class="duration-settings">
+                        <summary>Set duration</summary>
+                        <div class="duration-setting">
+                            <label for="minuteInput" class="minute-label">Focus minutes</label>
+                            <input type="number" id="minuteInput" class="minute-input" min="1" max="120" value="25" />
+                            <button type="button" id="setDurationBtn" class="btn btn-secondary btn-sm">Apply</button>
+                        </div>
+                    </details>
                 </div>
             </section>
         </div>
+
+        <section class="home-overview">
+            <div class="section-header section-header--stacked">
+                <div>
+                    <h2>Overview</h2>
+                    <p class="home-section-note">Recent progress at a glance</p>
+                </div>
+            </div>
+            <div class="stats-grid">
+                <a href="pages/tasks.html" class="stat-card">
+                    <div class="stat-icon" aria-hidden="true">✅</div>
+                    <h3>Tasks</h3>
+                    <p class="stat-value">0/5</p>
+                </a>
+                <a href="pages/progress.html" class="stat-card">
+                    <div class="stat-icon" aria-hidden="true">⏱️</div>
+                    <h3>Study time (7 days)</h3>
+                    <p class="stat-value" id="homeStudyTime">0h 00m</p>
+                </a>
+                <a href="pages/progress.html" class="stat-card">
+                    <div class="stat-icon" aria-hidden="true">📁</div>
+                    <h3>Projects</h3>
+                    <p class="stat-value" id="homeProjects">3</p>
+                </a>
+                <a href="pages/progress.html" class="stat-card">
+                    <div class="stat-icon" aria-hidden="true">🔥</div>
+                    <h3>Current streak</h3>
+                    <p class="stat-value" id="homeStreak">7 days</p>
+                </a>
+            </div>
+        </section>
 
         <section>
             <div class="section-header section-header--stacked">

@@ -107,6 +107,9 @@ await reset();
   eq(g.selectedAttr.length, 1, 'moving the selection leaves no stale aria-selected behind');
   eq(g.selectedAttr[0], dates[4], 'aria-selected follows the new day');
   eq(await page.inputValue('#eventDate'), dates[4], 'the form date follows the selected day');
+  const selectedLabel = await page.locator(`#calendarGrid button[data-date="${dates[4]}"]`).getAttribute('aria-label');
+  assert(selectedLabel.startsWith(await page.locator('#selectedDateLabel').textContent()),
+    'full selected date heading matches the calendar day');
 }
 
 console.log('\n--- Month navigation ---');
@@ -141,6 +144,34 @@ await reset();
   const back = (await gridState()).month;
   assert(back !== rolled, `14 months back lands elsewhere (${back})`);
   eq((await gridState()).dayCount, 42, 'grid survives the year-boundary round trip');
+
+  await page.click('#todayMonth');
+  await page.waitForTimeout(200);
+  const todayState = await gridState();
+  eq(todayState.month, new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+    'Today returns to the current month');
+  eq(todayState.selected[0], await page.evaluate(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }), 'Today selects the current date');
+}
+
+console.log('\n--- Selected-day event count and accessible event marker ---');
+await reset();
+{
+  await seed(0, 'First today event', '09:00');
+  await seed(0, 'Second today event', '11:00');
+  await page.reload();
+  await page.waitForTimeout(250);
+
+  eq(await page.locator('#selectedEventCount').textContent(), '2 events scheduled',
+    'selected-day heading shows the event count');
+  const todayButtonLabel = await page.locator('#calendarGrid .calendar-day.today').getAttribute('aria-label');
+  assert(todayButtonLabel.endsWith(', today, 2 events'),
+    `calendar day announces its event count (${todayButtonLabel})`);
+  const eventTimes = await page.locator('#eventList .event-item-meta').allTextContents();
+  assert(eventTimes[0].includes('9:00 AM') && eventTimes[1].includes('11:00 AM'),
+    'selected-day events are listed in time order');
 }
 
 console.log('\n--- Create ---');
@@ -249,7 +280,7 @@ await reset();
   await page.click('#confirmDeleteBtn');
   await page.waitForTimeout(250);
   eq((await store()).length, 0, 'confirming deletes the event');
-  assert((await page.textContent('#eventList')).includes('No events'), 'the day list returns to its empty state');
+  assert((await page.textContent('#eventList')).includes('Nothing scheduled'), 'the day list returns to its empty state');
   assert(!(await gridState()).withEvents.includes(today), 'the event dot is cleared');
 }
 
@@ -374,4 +405,6 @@ await reset();
   eq(g.selected.length, 1, 'one day is selected on load');
   assert(g.gridRole === 'group', `grid announces itself as role="${g.gridRole}"`);
   assert(g.dayRole === null, `day cells are plain buttons (role=${g.dayRole})`);
+  eq(await page.locator('#selectedDateHeading').count(), 1, 'selected date has a dedicated heading');
+  eq(await page.locator('#selectedEventCount').textContent(), '0 events scheduled', 'selected-day event count starts at zero');
 }

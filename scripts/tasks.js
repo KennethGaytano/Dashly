@@ -100,6 +100,9 @@ function createTask(taskData) {
     status: taskData.status || TaskStatus.TODO,
     priority: taskData.priority || TaskPriority.MEDIUM,
     createdAt: new Date().toISOString(),
+    completedAt: (taskData.status || TaskStatus.TODO) === TaskStatus.COMPLETED
+      ? new Date().toISOString()
+      : '',
     updatedAt: new Date().toISOString()
   };
 
@@ -141,9 +144,13 @@ function updateTask(taskId, updates) {
     updates.url = updates.url.trim();
   }
 
+  const statusChanged = updates.status !== undefined && updates.status !== tasks[index].status;
   tasks[index] = {
     ...tasks[index],
     ...updates,
+    completedAt: statusChanged
+      ? (updates.status === TaskStatus.COMPLETED ? new Date().toISOString() : '')
+      : (tasks[index].completedAt || ''),
     updatedAt: new Date().toISOString()
   };
 
@@ -220,13 +227,120 @@ function renderTasks() {
   // which reads as data loss. Unknown statuses now fall into To Do; the three
   // known ones keep their own lists, so nothing is duplicated.
   const KNOWN = [TaskStatus.TODO, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED];
-  const todoTasks = tasks.filter(t => t.status === TaskStatus.TODO || !KNOWN.includes(t.status));
-  const inProgressTasks = tasks.filter(t => t.status === TaskStatus.IN_PROGRESS);
+  const todoTasks = tasks.filter(t => t.status === TaskStatus.TODO || !KNOWN.includes(t.status))
+    .sort(compareTaskUrgency);
+  const inProgressTasks = tasks.filter(t => t.status === TaskStatus.IN_PROGRESS)
+    .sort(compareTaskUrgency);
   const completedTasks = tasks.filter(t => t.status === TaskStatus.COMPLETED);
 
   renderTaskSection('todoList', todoTasks, 'No tasks to do');
   renderTaskSection('inProgressList', inProgressTasks, 'No tasks in progress');
   renderTaskSection('completedList', completedTasks, 'No completed tasks');
+  updateTaskOverview(tasks, completedTasks);
+  applyTaskFilter();
+}
+
+function compareTaskUrgency(a, b) {
+  const aOverdue = isTaskOverdue(a);
+  const bOverdue = isTaskOverdue(b);
+  if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
+
+  const aDueToday = isTaskDueToday(a);
+  const bDueToday = isTaskDueToday(b);
+  if (aDueToday !== bDueToday) return aDueToday ? -1 : 1;
+
+  const aDueDate = typeof a.dueDate === 'string' ? a.dueDate : '';
+  const bDueDate = typeof b.dueDate === 'string' ? b.dueDate : '';
+  if (aDueDate && bDueDate && aDueDate !== bDueDate) {
+    return aDueDate.localeCompare(bDueDate);
+  }
+  if (aDueDate !== bDueDate) return aDueDate ? -1 : 1;
+
+  const priorityOrder = { high: 0, medium: 1, low: 2 };
+  return (priorityOrder[a.priority] ?? 3) - (priorityOrder[b.priority] ?? 3);
+}
+
+function localDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function isTaskDueToday(task) {
+  return Boolean(task.dueDate) && task.dueDate === localDateKey(new Date()) &&
+    task.status !== TaskStatus.COMPLETED;
+}
+
+function updateTaskOverview(tasks, completedTasks) {
+  const dueToday = tasks.filter(isTaskDueToday).length;
+  const overdue = tasks.filter(isTaskOverdue).length;
+
+  const now = new Date();
+  const weekStart = new Date(now);
+  const daysSinceMonday = (now.getDay() + 6) % 7;
+  weekStart.setDate(now.getDate() - daysSinceMonday);
+  weekStart.setHours(0, 0, 0, 0);
+  const completedThisWeek = completedTasks.filter(task => {
+    const completedAt = task.completedAt || task.updatedAt;
+    const completedDate = completedAt ? new Date(completedAt) : null;
+    return completedDate && !isNaN(completedDate.getTime()) && completedDate >= weekStart;
+  }).length;
+
+  const dueTodayCount = document.getElementById('dueTodayCount');
+  const overdueCount = document.getElementById('overdueCount');
+  const completedWeekCount = document.getElementById('completedWeekCount');
+  const completedCount = document.getElementById('completedCount');
+  if (dueTodayCount) dueTodayCount.textContent = String(dueToday);
+  if (overdueCount) overdueCount.textContent = String(overdue);
+  if (completedWeekCount) completedWeekCount.textContent = String(completedThisWeek);
+  if (completedCount) completedCount.textContent = String(completedTasks.length);
+}
+
+function applyTaskFilter(filter) {
+  if (!document.querySelector('.task-filter')) return;
+
+  const currentButton = document.querySelector('.task-filter[aria-pressed="true"]');
+  const activeFilter = filter || (currentButton && currentButton.dataset.taskFilter) || 'all';
+  document.querySelectorAll('.task-filter').forEach(button => {
+    const isActive = button.dataset.taskFilter === activeFilter;
+    button.setAttribute('aria-pressed', String(isActive));
+    button.classList.toggle('is-active', isActive);
+  });
+  const sections = ['todoList', 'inProgressList', 'completedList'];
+  let visibleCount = 0;
+
+  sections.forEach(containerId => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const section = container.closest('section, details');
+    let sectionCount = 0;
+
+    container.querySelectorAll('.task-item').forEach(item => {
+      const matches = activeFilter === 'all' ||
+        (activeFilter === 'today' && (item.dataset.taskDueToday === 'true' || item.dataset.taskOverdue === 'true')) ||
+        (activeFilter === 'overdue' && item.dataset.taskOverdue === 'true');
+      item.hidden = !matches;
+      if (matches) {
+        sectionCount++;
+        visibleCount++;
+      }
+    });
+
+    if (section && activeFilter !== 'all') {
+      section.hidden = sectionCount === 0;
+    } else if (section) {
+      section.hidden = false;
+    }
+  });
+
+  const emptyMessage = document.getElementById('taskFilterEmpty');
+  if (emptyMessage) {
+    emptyMessage.hidden = activeFilter === 'all' || visibleCount > 0;
+    emptyMessage.textContent = activeFilter === 'overdue'
+      ? 'Nothing overdue. You are up to date.'
+      : 'Nothing due today. You are clear for now.';
+  }
 }
 
 /**
@@ -246,7 +360,7 @@ function renderTaskSection(containerId, tasks, emptyMessage) {
   }
 
   container.innerHTML = tasks.map(task => `
-    <div class="task-item ${task.status === TaskStatus.COMPLETED ? 'completed' : ''}" data-task-id="${escapeHtml(task.id)}">
+    <div class="task-item ${task.status === TaskStatus.COMPLETED ? 'completed' : ''} ${isTaskOverdue(task) ? 'is-overdue' : ''} ${isTaskDueToday(task) ? 'is-due-today' : ''}" data-task-id="${escapeHtml(task.id)}" data-task-overdue="${isTaskOverdue(task)}" data-task-due-today="${isTaskDueToday(task)}">
       <input
         type="checkbox"
         ${task.status === TaskStatus.COMPLETED ? 'checked' : ''}
@@ -633,6 +747,10 @@ function initTaskManager() {
 
   // Render initial tasks
   renderTasks();
+
+  document.querySelectorAll('.task-filter').forEach(button => {
+    button.addEventListener('click', () => applyTaskFilter(button.dataset.taskFilter));
+  });
 
   // Set up form submission
   const form = document.getElementById('taskForm');

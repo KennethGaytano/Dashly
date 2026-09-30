@@ -21,6 +21,8 @@ let editingNoteId = null;
 // The add/edit form, revealed by the "+ New Note" button. Assigned in init.
 let noteFormDisclosure = null;
 let modalOpener = null;
+let noteViewerOpener = null;
+let viewingNoteId = null;
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -29,7 +31,13 @@ function generateId() {
 function getNotes() {
   try {
     const notes = localStorage.getItem(STORAGE_KEY);
-    return notes ? JSON.parse(notes) : [];
+    if (!notes) return [];
+    const parsed = JSON.parse(notes);
+    if (!Array.isArray(parsed)) {
+      console.error('Stored notes are not an array; ignoring them.');
+      return [];
+    }
+    return parsed.filter(note => note && typeof note === 'object' && note.id);
   } catch (error) {
     console.error('Error loading notes:', error);
     return [];
@@ -145,10 +153,24 @@ function noteLinkHtml(note) {
 function renderNotes() {
   const container = document.getElementById('notesList');
   if (!container) return;
-  const notes = getNotes();
+  const searchInput = document.getElementById('noteSearch');
+  const query = searchInput ? searchInput.value.trim().toLocaleLowerCase() : '';
+  const allNotes = getNotes();
+  if (searchInput) searchInput.hidden = allNotes.length === 0;
+  const notes = allNotes.filter(note => !query ||
+    [note.title, note.body, note.url].some(value => String(value || '').toLocaleLowerCase().includes(query))
+  );
   notes.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  const count = document.getElementById('notesCount');
+  if (count) count.textContent = query
+    ? `${notes.length} of ${allNotes.length} notes`
+    : `${allNotes.length} ${allNotes.length === 1 ? 'note' : 'notes'}`;
+  if (allNotes.length === 0) {
+    container.innerHTML = '<p class="empty-state">No notes yet. <a href="#noteFormPanel" onclick="document.getElementById(\'newNoteBtn\').click(); return false;">Create your first note</a></p>';
+    return;
+  }
   if (notes.length === 0) {
-    container.innerHTML = '<p class="empty-state">No notes yet. <a href="#noteForm">Create your first note</a></p>';
+    container.innerHTML = '<p class="empty-state">No notes match that search. <button type="button" class="btn btn-secondary" onclick="clearNoteSearch()">Clear search</button></p>';
     return;
   }
   container.innerHTML = notes.map(note => `
@@ -159,11 +181,61 @@ function renderNotes() {
       ${noteLinkHtml(note)}
       <div class="note-date">${escapeHtml(formatNoteDate(note.updatedAt))}</div>
       <div class="note-actions">
+        <button type="button" class="btn btn-secondary" onclick="openNote('${escapeHtml(note.id)}')">Read</button>
         <button type="button" class="btn-icon" onclick="startEditNote('${escapeHtml(note.id)}')" aria-label="Edit note ${escapeHtml(note.title)}">✏️</button>
         <button type="button" class="btn-icon danger" onclick="confirmDeleteNote('${escapeHtml(note.id)}')" aria-label="Delete note ${escapeHtml(note.title)}">🗑️</button>
       </div>
     </article>
   `).join('');
+}
+
+function clearNoteSearch() {
+  const search = document.getElementById('noteSearch');
+  if (!search) return;
+  search.value = '';
+  renderNotes();
+  search.focus();
+}
+
+function openNote(id) {
+  const note = getNotes().find(item => item.id === id);
+  const viewer = document.getElementById('noteViewer');
+  if (!note || !viewer) return;
+  viewingNoteId = id;
+  noteViewerOpener = document.activeElement;
+  document.getElementById('noteReaderTitle').textContent = note.title;
+  document.getElementById('noteReaderDate').textContent = `Updated ${formatNoteDate(note.updatedAt)}`;
+  document.getElementById('noteReaderBody').textContent = note.body || 'This note has no text.';
+  const link = document.getElementById('noteReaderLink');
+  const safeLink = normalizeLink(note.url);
+  if (safeLink) {
+    link.href = safeLink;
+    link.textContent = `Open link: ${displayLink(safeLink)}`;
+    link.hidden = false;
+  } else {
+    link.removeAttribute('href');
+    link.hidden = true;
+  }
+  viewer.style.display = 'flex';
+  document.getElementById('closeNoteViewer').focus();
+}
+
+function closeNoteViewer(restoreFocus = true) {
+  const viewer = document.getElementById('noteViewer');
+  if (viewer) viewer.style.display = 'none';
+  viewingNoteId = null;
+  if (restoreFocus && noteViewerOpener && document.contains(noteViewerOpener)) noteViewerOpener.focus();
+  noteViewerOpener = null;
+}
+
+function editViewedNote() {
+  const id = viewingNoteId;
+  closeNoteViewer(false);
+  if (id) {
+    startEditNote(id);
+    const titleInput = document.getElementById('noteTitle');
+    if (titleInput) titleInput.focus();
+  }
 }
 
 function startEditNote(id) {
@@ -239,12 +311,22 @@ function closeModal() {
 }
 
 function trapModalFocus(event) {
-  const modal = document.getElementById('confirmModal');
-  if (!modal || modal.style.display === 'none') return;
+  const viewer = document.getElementById('noteViewer');
+  const confirm = document.getElementById('confirmModal');
+  const modal = viewer && viewer.style.display === 'flex'
+    ? viewer
+    : confirm && confirm.style.display !== 'none' ? confirm : null;
+  if (!modal) return;
+  if (event.key === 'Escape') {
+    if (modal === viewer) closeNoteViewer();
+    else closeModal();
+    return;
+  }
   const focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-  if (focusable.length === 0) return;
-  const first = focusable[0];
-  const last = focusable[focusable.length - 1];
+  const visibleFocusable = Array.from(focusable).filter(el => el.offsetParent !== null);
+  if (visibleFocusable.length === 0) return;
+  const first = visibleFocusable[0];
+  const last = visibleFocusable[visibleFocusable.length - 1];
   if (event.key === 'Tab') {
     if (event.shiftKey) {
       if (document.activeElement === first) {
@@ -257,9 +339,6 @@ function trapModalFocus(event) {
         first.focus();
       }
     }
-  }
-  if (event.key === 'Escape') {
-    closeModal();
   }
 }
 
@@ -301,13 +380,16 @@ function init() {
 
       let color = 'accent';
       colorInputs.forEach(input => { if (input.checked) color = input.value; });
+      let saved;
       if (editingNoteId) {
-        updateNote(editingNoteId, { title: title, body: body, url: url || '', color: color });
+        saved = updateNote(editingNoteId, { title: title, body: body, url: url || '', color: color });
+        if (!saved) return;
         editingNoteId = null;
         document.getElementById('formTitle').textContent = 'New Note';
         document.getElementById('submitBtn').textContent = '+ Save';
       } else {
-        createNote({ title: title, body: body, url: url || '', color: color });
+        saved = createNote({ title: title, body: body, url: url || '', color: color });
+        if (!saved) return;
       }
       if (titleInput) titleInput.value = '';
       if (bodyInput) bodyInput.value = '';
@@ -327,6 +409,14 @@ function init() {
     if (id) { deleteNote(id); renderNotes(); }
     closeModal();
   };
+  const noteSearch = document.getElementById('noteSearch');
+  if (noteSearch) noteSearch.addEventListener('input', renderNotes);
+  document.getElementById('closeNoteViewer').addEventListener('click', () => closeNoteViewer());
+  document.getElementById('closeNoteViewerAction').addEventListener('click', () => closeNoteViewer());
+  document.getElementById('editViewedNote').addEventListener('click', editViewedNote);
+  document.getElementById('noteViewer').addEventListener('click', event => {
+    if (event.target === event.currentTarget) closeNoteViewer();
+  });
   document.addEventListener('keydown', trapModalFocus);
 }
 
@@ -334,6 +424,8 @@ window.startEditNote = startEditNote;
 window.cancelEdit = cancelEdit;
 window.confirmDeleteNote = confirmDeleteNote;
 window.closeModal = closeModal;
+window.openNote = openNote;
+window.clearNoteSearch = clearNoteSearch;
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);

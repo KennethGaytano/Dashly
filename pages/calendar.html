@@ -61,6 +61,7 @@
                         <span aria-hidden="true">←</span> Prev
                     </button>
                     <h2 id="monthLabel" aria-live="polite">September 2026</h2>
+                    <button type="button" class="btn btn-secondary btn-sm calendar-today" id="todayMonth">Today</button>
                     <button type="button" class="btn btn-secondary btn-sm" id="nextMonth" aria-label="Next month">
                         Next <span aria-hidden="true">→</span>
                     </button>
@@ -81,7 +82,10 @@
 
         <section id="eventPanel">
             <div class="section-header">
-                <h2>Events for <span id="selectedDateLabel">today</span></h2>
+                <div class="selected-day-heading">
+                    <h2 id="selectedDateHeading" aria-live="polite" aria-atomic="true"><span id="selectedDateLabel">today</span></h2>
+                    <p id="selectedEventCount" role="status" aria-live="polite"></p>
+                </div>
                 <button
                     type="button"
                     class="btn btn-primary"

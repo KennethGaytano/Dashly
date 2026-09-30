@@ -171,6 +171,7 @@ Personal_DashBoard/
     ├── smoke.mjs           # Cross-page smoke test
     ├── task-tests.mjs      # Task management test suite
     ├── goals-tests.mjs     # Goals test suite
+    ├── notes-tests.mjs     # Notes search, read view, edit, and empty-state tests
     ├── calendar-tests.mjs  # Calendar test suite (grid, CRUD, delete dialog)
     ├── form-disclosure-tests.mjs # Collapsed-form contract across all 6 pages
     ├── disclosure-shots.mjs # Screenshots: closed vs open, phone + desktop
@@ -214,21 +215,12 @@ The server defaults to port 3000. If something else is using it:
 - Set `PORT` env var: `PORT=3001 node server.mjs`
 - Or kill the conflicting process: `netstat -ano | findstr :3000` then `taskkill /PID <pid> /F`
 
-### 5. No JavaScript in the App Yet
+### 5. Local Storage and Test Data
 
-The HTML files have no `<script>` tags. Buttons, checkboxes, and inputs render but don't have event handlers attached. This is expected for the current state - it's a static prototype.
-
-**What works via Playwright:**
-- Checking checkboxes (Playwright manipulates DOM directly)
-- Filling input fields
-- Clicking buttons (they respond visually)
-
-**What doesn't work yet:**
-- Pomodoro timer countdown (no JS)
-- Task persistence (no storage)
-- Adding tasks dynamically (no JS to append DOM nodes)
-
-If a PR adds JavaScript, update the smoke test to verify the actual behavior (timer counts down, tasks persist, etc.).
+The app uses JavaScript and `localStorage` for tasks, events, notes, goals,
+progress tracks, and Pomodoro sessions. Browser tests should clear or set only
+the keys they need, then restore any existing values they changed. Progress and
+Goals intentionally do not generate example records for empty storage.
 
 ### 6. Screenshot Timing
 
@@ -351,6 +343,7 @@ console.log('Checkbox persisted:', isChecked);
 ## Notes for Future Agents
 
 - **The app is fully functional.** It is a static site with no backend, but it has ten JavaScript modules driving real CRUD against `localStorage` — tasks, calendar events, notes, goals, progress tracks, and a Pomodoro timer. Any note here claiming there is "no JavaScript yet" is out of date.
+- **Progress and Goals do not seed sample records.** Empty storage stays empty; their first-run states should not be treated as populated example data.
 - **Screenshots are the ground truth:** When verifying a UI change, compare before/after screenshots. The PNG files in `$CLAUDE_JOB_DIR/tmp/` are your test output.
 - **`mobile-audit.mjs` seeds data; `mobile-shots.mjs` does not.** The older screenshot script launches with empty `localStorage`, so every content view renders its empty state. Use the audit script for anything that depends on real content — it caught layout bugs the empty captures could never show.
 - **A full-page screenshot cannot show a `position: fixed` element honestly.** Playwright renders beyond the viewport without resizing, so the tab bar lands mid-image and looks like an overlap bug. `mobile-audit.mjs` handles this by hiding the bar for full-page shots and taking a separate viewport-only shot (`audit-<width>-chrome.png`) of the real chrome.
@@ -375,7 +368,7 @@ console.log('Checkbox persisted:', isChecked);
 ## Summary
 
 - **Smoke test:** `cd .claude/skills/run-personal-dashboard && node smoke.mjs`
-- **Behaviour suites:** `node task-tests.mjs`, `node goals-tests.mjs`, `node progress-tests.mjs`, `node calendar-tests.mjs` — run one at a time, they all bind port 3000
+- **Behaviour suites:** `node task-tests.mjs`, `node goals-tests.mjs`, `node notes-tests.mjs`, `node progress-tests.mjs`, `node calendar-tests.mjs` — run one at a time, they all bind port 3000
 - **Collapsed forms:** `node form-disclosure-tests.mjs` — the open/close contract across all six pages
 - **Disclosure screenshots:** `node disclosure-shots.mjs` — closed vs open form at 390px and 1280px
 - **Mobile regression:** `node mobile-audit.mjs` (geometry across 6 widths), `node mobile-nav-tests.mjs` (app bar / tab bar / drawer behaviour), `node width-sweep.mjs` (16 widths, hostile content — run `SHOT=1 node width-sweep.mjs` for PNGs)

@@ -184,7 +184,17 @@ for (const [url, label, trigger, field, editBtn, record, key] of EDITS) {
   await page.reload();
   await page.waitForTimeout(400);
 
+  // The task list defaults to the "Today" filter, which hides a task with no
+  // due date. Switch to "All" the way a user would, or the row we are about to
+  // click Edit on is present in the DOM but not visible.
+  const allFilter = page.locator('[data-task-filter="all"]');
+  if (await allFilter.count()) {
+    await allFilter.click();
+    await page.waitForTimeout(150);
+  }
+
   assert(await page.locator(editBtn).count() > 0, `${label}: the stored item rendered`);
+  assert(await page.locator(editBtn).isVisible(), `${label}: the stored item is visible`);
   assert(!(await page.locator(field).isVisible()), `${label}: the form is still collapsed before editing`);
 
   await page.click(editBtn);

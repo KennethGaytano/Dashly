@@ -55,29 +55,30 @@
         </header>
 
         <section aria-live="polite">
-            <h2>Weekly Stats</h2>
+            <h2>Last 7 days</h2>
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon" aria-hidden="true">📋</div>
-                    <h3>Tasks Done</h3>
+                    <h3>Tasks completed</h3>
                     <p class="stat-value" id="statTasksDone">0</p>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon" aria-hidden="true">⏱️</div>
-                    <h3>Hours Studied</h3>
+                    <h3>Focus time</h3>
                     <p class="stat-value" id="statHoursStudied">0.0</p>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon" aria-hidden="true">🍅</div>
-                    <h3>Pomodoros</h3>
+                    <h3>Focus sessions</h3>
                     <p class="stat-value" id="statPomodoros">0</p>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon" aria-hidden="true">🔥</div>
-                    <h3>Day Streak</h3>
+                    <h3>Current streak</h3>
                     <p class="stat-value" id="statStreak">0</p>
                 </div>
             </div>
+            <p class="form-help">Counts use completed tasks and focus sessions dated today or the previous six days. Your streak counts consecutive active days.</p>
         </section>
 
         <!-- Add/Edit Skill or Project -->
@@ -115,6 +116,7 @@
                         <label for="trackName" class="form-label">Name <span class="required">*</span></label>
                         <input type="text" id="trackName" name="name" placeholder="e.g. TypeScript" required aria-required="true">
                     </div>
+                    <p class="form-help">Progress moves in steps. Add skills or projects here; your saved items are grouped below.</p>
 
                     <div class="form-actions">
                         <button type="submit" id="submitBtn" class="btn btn-primary">+ Add</button>
@@ -126,7 +128,7 @@
         </section>
 
         <section>
-            <h2>Skills &amp; Learning</h2>
+            <h2>Skills and projects</h2>
             <div class="card" id="skillsList">
                 <!-- Dynamically populated by progress.js -->
             </div>

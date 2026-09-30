@@ -7,6 +7,32 @@
     gap: 1rem;
 }
 
+.notes-list-header,
+.note-reader-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.notes-list-header {
+    margin-bottom: 0.75rem;
+}
+
+.notes-list-header h2 {
+    margin-bottom: 0;
+}
+
+.notes-count {
+    margin-top: 0.2rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.notes-search {
+    width: min(100%, 20rem);
+}
+
 .note-card {
     display: block;
     background: var(--bg-card);
@@ -66,6 +92,45 @@ button.note-card:hover {
 }
 
 .note-card .note-link:hover { text-decoration: underline; }
+
+.note-reader {
+    width: min(100%, 42rem);
+    max-height: min(85vh, 52rem);
+    overflow-y: auto;
+}
+
+.note-reader-heading {
+    align-items: flex-start;
+}
+
+.note-reader-heading h2 {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.note-reader .note-date {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin: 0.5rem 0 1rem;
+}
+
+.note-reader-body {
+    color: var(--text-primary);
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.note-reader .note-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-top: 0.75rem;
+}
+
+.note-reader .modal-actions {
+    margin-top: 1.25rem;
+}
 
 .note-color-bar {
     height: 3px;
@@ -217,5 +282,14 @@ button.note-card:hover {
         display: inline-flex;
         align-items: center;
         min-height: 44px;
+    }
+
+    .notes-list-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .notes-search {
+        width: 100%;
     }
 }

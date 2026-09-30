@@ -175,6 +175,7 @@ function eventRow(ev, showDate) {
 function renderEventList(dateKey) {
   const container = document.getElementById('eventList');
   const label = document.getElementById('selectedDateLabel');
+  const countLabel = document.getElementById('selectedEventCount');
   if (!container) return;
 
   const events = getEvents()
@@ -183,11 +184,16 @@ function renderEventList(dateKey) {
 
   container.innerHTML = '';
   if (label) label.textContent = formatEventDate(dateKey);
+  if (countLabel) {
+    countLabel.textContent = events.length === 1
+      ? '1 event scheduled'
+      : `${events.length} events scheduled`;
+  }
 
   if (events.length === 0) {
     const p = document.createElement('p');
     p.className = 'empty-state';
-    p.textContent = 'No events on this day.';
+    p.textContent = 'Nothing scheduled yet. Add an event to plan this day.';
     container.appendChild(p);
     return;
   }
@@ -574,6 +580,14 @@ window.getCalendarEventDates = function() {
   const set = new Set();
   getEvents().forEach(e => { if (e.date) set.add(e.date); });
   return set;
+};
+
+window.getCalendarEventCounts = function() {
+  const counts = new Map();
+  getEvents().forEach(event => {
+    if (event.date) counts.set(event.date, (counts.get(event.date) || 0) + 1);
+  });
+  return counts;
 };
 
 if (document.readyState === 'loading') {

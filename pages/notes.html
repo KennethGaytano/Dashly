@@ -55,7 +55,7 @@
 
         <section>
             <div class="section-header">
-                <h2 id="formTitle">New Note</h2>
+                <h2>Your notes</h2>
                 <button
                     type="button"
                     class="btn btn-primary"
@@ -66,6 +66,7 @@
             </div>
             <div id="noteFormPanel" hidden>
             <div class="card">
+                <h2 id="formTitle">New note</h2>
                 <form id="noteForm" class="note-form">
                     <div class="form-group">
                         <label for="noteTitle" class="form-label">Title <span class="required">*</span></label>
@@ -127,7 +128,14 @@
         </section>
 
         <section>
-            <h2>All Notes</h2>
+            <div class="notes-list-header">
+                <div>
+                    <h2>All notes</h2>
+                    <p id="notesCount" class="notes-count" aria-live="polite"></p>
+                </div>
+                <label class="visually-hidden" for="noteSearch">Search notes</label>
+                <input type="search" id="noteSearch" class="notes-search" placeholder="Search notes">
+            </div>
             <div id="notesList" class="notes-grid"></div>
         </section>
 
@@ -156,6 +164,21 @@
         </button>
     </nav>
 
+    <div id="noteViewer" class="modal" role="dialog" aria-modal="true" aria-labelledby="noteReaderTitle">
+        <div class="modal-content note-reader">
+            <div class="note-reader-heading">
+                <h2 id="noteReaderTitle"></h2>
+                <button type="button" id="closeNoteViewer" class="btn-icon" aria-label="Close note">✕</button>
+            </div>
+            <p id="noteReaderDate" class="note-date"></p>
+            <div id="noteReaderBody" class="note-reader-body"></div>
+            <a id="noteReaderLink" class="note-link" target="_blank" rel="noopener noreferrer" hidden></a>
+            <div class="modal-actions">
+                <button type="button" id="editViewedNote" class="btn btn-primary">Edit note</button>
+                <button type="button" id="closeNoteViewerAction" class="btn btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Confirmation Modal -->
     <div id="confirmModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">

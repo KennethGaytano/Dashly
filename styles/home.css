@@ -1,5 +1,35 @@
 /* Home page: Pomodoro timer */
 
+/* ===== Home hierarchy ===== */
+.home-section-note {
+    margin: 0.25rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.home-task-section .card {
+    min-height: 8rem;
+}
+
+.home-task-section .empty-state {
+    text-align: left;
+}
+
+.home-task-section .empty-state .section-link {
+    min-height: auto;
+    display: inline;
+    color: var(--accent-light);
+}
+
+.home-overview .stat-card {
+    padding: 1rem 1.1rem;
+}
+
+.home-overview .stat-card h3 {
+    text-transform: none;
+    letter-spacing: 0;
+}
+
 /* ===== Pomodoro Timer ===== */
 .mode-switch {
     display: flex;
@@ -23,12 +53,12 @@
 
 .pomodoro {
     text-align: center;
-    padding: 2.8rem 1.5rem;
+    padding: 2rem 1.5rem 1.5rem;
     min-height: 200px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    max-height: 420px;
+    gap: 0.75rem;
 }
 
 .pomodoro .timer-display {
@@ -36,8 +66,44 @@
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.05em;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0;
     color: var(--accent-light);
+}
+
+.pomodoro .timer-progress {
+    display: block;
+    width: min(100%, 20rem);
+    height: 0.45rem;
+    margin: 0 auto;
+    overflow: hidden;
+    border: 0;
+    border-radius: 999px;
+    background: var(--bg-secondary);
+    color: var(--accent-light);
+    accent-color: var(--accent-light);
+}
+
+.pomodoro .timer-progress::-webkit-progress-bar {
+    background: var(--bg-secondary);
+    border-radius: 999px;
+}
+
+.pomodoro .timer-progress::-webkit-progress-value {
+    background: var(--accent-light);
+    border-radius: 999px;
+    transition: width 0.25s linear;
+}
+
+.pomodoro .timer-progress::-moz-progress-bar {
+    background: var(--accent-light);
+    border-radius: 999px;
+}
+
+.pomodoro .timer-status {
+    min-height: 1.4em;
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
 }
 
 .pomodoro .timer-buttons {
@@ -46,27 +112,42 @@
     justify-content: center;
 }
 
-.timer-controls {
+.pomodoro .timer-controls {
     display: flex;
-    align-items: flex-end;
     justify-content: center;
-    gap: 0.75rem;
-    flex-wrap: wrap;
 }
-.minute-field {
+
+.duration-settings {
+    margin: 0.25rem auto 0;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.duration-settings > summary {
+    min-height: 44px;
     display: flex;
-    flex-direction: column;
     align-items: center;
+    justify-content: center;
+    cursor: pointer;
 }
+
+.duration-setting {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    padding-top: 0.4rem;
+}
+
 .pomodoro .minute-label {
     font-size: 0.85rem;
     font-weight: 500;
     color: var(--text-secondary);
-    margin-bottom: 0.15rem;
 }
 
 .pomodoro .minute-input {
-    width: 84px;
+    width: 5rem;
     padding: 0.4rem 0.5rem;
     border: 1px solid var(--border);
     background: var(--bg-secondary);
@@ -85,6 +166,10 @@
 .pomodoro .minute-input:focus {
     outline: 2px solid var(--accent-light);
     outline-offset: 1px;
+}
+
+.pomodoro .minute-input[aria-invalid="true"] {
+    border-color: var(--danger);
 }
 
 /* Focus/Break buttons measured 25px tall on a phone. The taller box keeps the

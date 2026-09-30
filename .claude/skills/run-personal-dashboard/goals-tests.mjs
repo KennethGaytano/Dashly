@@ -69,6 +69,9 @@ async function createGoal(page, { title, status, progress, milestones = [] }) {
     if (i > 0) await page.click('button:has-text("+ Add milestone")');
     await rows.nth(i).fill(milestones[i]);
   }
+  if (milestones.length && !(await page.locator('#goalProgress').isDisabled())) {
+    throw new Error('Manual progress stays enabled when milestone-based progress is active');
+  }
   await page.click('#submitBtn');
   await page.waitForTimeout(150);
 }
@@ -120,15 +123,17 @@ async function runTests() {
     });
 
     // -------------------------------------------------------------
-    // Test 1: Page Load & Seeds
+    // Test 1: Page Load & Honest Empty State
     // -------------------------------------------------------------
-    console.log('--- Test Group 1: Page Load & Seeded Goals ---');
+    console.log('--- Test Group 1: Page Load & Empty Goals ---');
     await page.goto(GOALS_URL);
     await page.evaluate(() => localStorage.clear());
     await page.reload();
 
     assert((await page.title()).includes('Goals'), 'Page title is correct');
-    assert((await page.locator('#goalsList .goal-card').count()) === 4, 'Empty storage seeds 4 goals');
+    assert((await page.locator('#goalsList .goal-card').count()) === 0, 'Empty storage does not create example goals');
+    assert((await page.locator('#goalsList .empty-state').textContent()).includes('No goals yet'), 'Empty goal state invites the user to create a goal');
+    assert(await getGoals(page) === null, 'Displaying the empty state does not write sample goals');
     assert(
       (await page.locator('#goalStatus option').count()) === 3,
       'Status dropdown offers active / paused / completed'
@@ -141,12 +146,13 @@ async function runTests() {
     await createGoal(page, {
       title: 'Milestone Goal',
       status: 'active',
-      progress: 0,
+      progress: 70,
       milestones: ['step one', 'step two']
     });
     const created = await storedGoal(page, 'Milestone Goal');
     assert(created !== null, 'Goal is persisted to dashboard_goals');
     assert(created.milestones.length === 2, 'Both milestone rows are stored');
+    assert(created.progress === 0, 'Milestones determine goal progress even when a manual percentage is entered');
     assert(created.status === 'active', 'New goal starts active');
     assert(
       (await page.locator('#goalsList .goal-card').filter({ hasText: 'Milestone Goal' }).count()) === 1,
@@ -195,6 +201,7 @@ async function runTests() {
     await createGoal(page, { title: 'Dropdown Goal', status: 'completed', progress: 40 });
     const viaDropdown = await storedGoal(page, 'Dropdown Goal');
     assert(viaDropdown.status === 'completed', 'Explicit Completed in the dropdown is honoured');
+    assert(viaDropdown.progress === 100, 'A manually completed goal shows 100% progress');
     onProgress = await goalsUnderFilter(page, 'completed');
     assert(onProgress.includes('Dropdown Goal'), 'Dropdown-completed goal shows under Completed');
 
@@ -290,4 +297,3 @@ runTests().catch((err) => {
   console.error('Fatal test error:', err);
   process.exit(1);
 });
-

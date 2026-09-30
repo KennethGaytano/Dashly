@@ -8,6 +8,61 @@
     gap: 0.5rem;
 }
 
+.task-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem 1.25rem;
+    margin-top: 1rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.task-summary strong {
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.task-summary span:nth-child(2) strong,
+.task-item.is-overdue .task-due-date {
+    color: var(--warning);
+}
+
+.task-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0 0 1.25rem;
+}
+
+.task-filter {
+    min-height: 44px;
+    padding: 0.45rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: color var(--transition), background-color var(--transition),
+        border-color var(--transition);
+}
+
+.task-filter:hover {
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+
+.task-filter.is-active {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+    color: var(--accent-light);
+}
+
+.task-filter-empty {
+    margin: 0 0 1.5rem;
+    text-align: left;
+}
+
 .task-item {
     display: flex;
     align-items: center;
@@ -17,6 +72,21 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     transition: background-color var(--transition);
+}
+
+.task-item[hidden],
+section[hidden],
+details[hidden],
+.task-filter-empty[hidden] {
+    display: none;
+}
+
+.task-item.is-overdue {
+    border-left: 3px solid var(--warning);
+}
+
+.task-item.is-due-today {
+    border-left: 3px solid var(--accent-light);
 }
 
 .task-item:hover {
@@ -157,6 +227,21 @@
     margin: 0.2rem 0 0 0;
 }
 
+.task-item.is-due-today .task-due-date,
+.task-item.is-overdue .task-due-date {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(251, 191, 36, 0.1);
+}
+
+.task-item.is-due-today .task-due-date {
+    color: var(--accent-light);
+    background: var(--accent-glow);
+}
+
 .task-due-time {
     color: var(--text-secondary);
     white-space: nowrap;
@@ -222,6 +307,42 @@
 
 .deadline-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.completed-disclosure {
+    margin-bottom: 2rem;
+    border-top: 1px solid var(--border);
+}
+
+.completed-disclosure:not([open]) > .task-list {
+    display: none;
+}
+
+.completed-disclosure > summary {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 52px;
+    color: var(--text-primary);
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    list-style-position: inside;
+}
+
+.completed-disclosure > summary::marker {
+    color: var(--text-muted);
+    font-size: 0.8em;
+}
+
+.completed-count {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.completed-disclosure[open] > .task-list {
+    padding-bottom: 0.5rem;
 }
 
 /* ===== Responsive ===== */

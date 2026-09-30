@@ -1,5 +1,5 @@
 /**
- * Progress Module — Goals-only read view. No seeds, no writes.
+ * Progress Module — weekly stats, saved tracks, and a read-only goals view.
  * Wrapped IIFE to avoid collision with goals.js globals.
  */
 (function() {
@@ -17,6 +17,10 @@
   }
   function writeStorage(key, val) {
     try { localStorage.setItem(key, JSON.stringify(val)); return true; } catch { return false; }
+  }
+  function readList(key) {
+    const value = readStorage(key);
+    return Array.isArray(value) ? value.filter(item => item && typeof item === 'object') : [];
   }
 
   const PROGRESS_STEPS = [0, 25, 50, 60, 70, 80, 90, 100];
@@ -37,7 +41,7 @@
     return nearest;
   }
 
-  // ---- stats (unchanged derivation) ----
+  // ---- weekly stats ----
   function localKey(d) {
     d = d || new Date();
     const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
@@ -50,29 +54,29 @@
   }
   function computeStats() {
     const windowKeys = daysInWindow();
-    const tasks = (readStorage(STORAGE_TASKS) || []);
+    const tasks = readList(STORAGE_TASKS);
     let doneTasks = 0;
-    tasks.forEach(function(t) { if (t && t.status === 'completed' && (t.updatedAt || t.createdAt)) { const d = new Date(t.updatedAt || t.createdAt); if (!isNaN(d.getTime()) && windowKeys.indexOf(localKey(d)) !== -1) doneTasks++; } });
-    const sessions = (readStorage(STORAGE_SESSIONS) || []);
+    tasks.forEach(function(t) { if (t.status === 'completed' && t.completedAt) { const d = new Date(t.completedAt); if (!isNaN(d.getTime()) && windowKeys.indexOf(localKey(d)) !== -1) doneTasks++; } });
+    const sessions = readList(STORAGE_SESSIONS);
     let focusMinutes = 0, focusCount = 0;
     sessions.forEach(function(s) { if (s && s.mode === 'focus' && s.completedAt) { const d = new Date(s.completedAt); if (!isNaN(d.getTime()) && windowKeys.indexOf(localKey(d)) !== -1) { focusCount++; focusMinutes += (typeof s.minutes === 'number' ? s.minutes : 0); } } });
     const hours = focusMinutes ? Math.round((focusMinutes / 60) * 10) / 10 : 0;
     let streak = 0;
     const activityDays = {};
-    tasks.forEach(function(t) { if (t && t.status === 'completed' && (t.updatedAt || t.createdAt)) { const d = new Date(t.updatedAt || t.createdAt); if (!isNaN(d.getTime())) activityDays[localKey(d)] = true; } });
+    tasks.forEach(function(t) { if (t.status === 'completed' && t.completedAt) { const d = new Date(t.completedAt); if (!isNaN(d.getTime())) activityDays[localKey(d)] = true; } });
     sessions.forEach(function(s) { if (s && s.mode === 'focus' && s.completedAt) { const d = new Date(s.completedAt); if (!isNaN(d.getTime())) activityDays[localKey(d)] = true; } });
     const startDay = new Date(); const hasToday = !!activityDays[localKey(startDay)];
     if (!hasToday) startDay.setDate(startDay.getDate() - 1);
-    for (let i = 0; i < 30; i++) { const d = new Date(startDay); d.setDate(startDay.getDate() - i); if (activityDays[localKey(d)]) streak++; else break; }
+    for (let i = 0; i < Object.keys(activityDays).length; i++) { const d = new Date(startDay); d.setDate(startDay.getDate() - i); if (activityDays[localKey(d)]) streak++; else break; }
     return { doneTasks, hours: hours, pomodoros: focusCount, streak: streak };
   }
   function renderStats() {
     const s = computeStats();
     function setVal(id, val) { const el = document.getElementById(id); if (el) el.textContent = String(val); }
-    setVal('statTasksDone', s.doneTasks);
-    setVal('statHoursStudied', s.hours.toFixed(1));
-    setVal('statPomodoros', s.pomodoros);
-    setVal('statStreak', s.streak);
+    setVal('statHoursStudied', s.hours.toFixed(1) + ' hrs');
+    setVal('statStreak', s.streak + (s.streak === 1 ? ' day' : ' days'));
+    setVal('statTasksDone', s.doneTasks + (s.doneTasks === 1 ? ' task' : ' tasks'));
+    setVal('statPomodoros', s.pomodoros + (s.pomodoros === 1 ? ' session' : ' sessions'));
   }
 
   // ---- goals read-only render ----
@@ -82,11 +86,16 @@
    * already sitting in storage whose `status` was never written as 'completed'
    * when they finished -- which is what kept them out of the Completed filter.
    */
+  function goalProgress(g) {
+    const ms = Array.isArray(g.milestones) ? g.milestones : [];
+    if (ms.length) return Math.round((ms.filter(m => m && m.done).length / ms.length) * 100);
+    return Math.min(100, Math.max(0, Math.round(Number(g.progress || 0))));
+  }
   function effectiveStatus(g) {
-    const pct = Math.min(100, Math.max(0, Math.round(Number(g.progress || 0))));
-    const ms = g.milestones || [];
+    const ms = Array.isArray(g.milestones) ? g.milestones : [];
     const allDone = ms.length > 0 && ms.every(m => m && m.done);
-    if (g.status === 'completed' || pct >= 100 || allDone) return 'completed';
+    const pct = goalProgress(g);
+    if (ms.length ? allDone : (g.status === 'completed' || pct >= 100)) return 'completed';
     if (g.status === 'paused') return 'paused';
     return 'active';
   }
@@ -96,7 +105,7 @@
     if (!container) return;
     const raw = readStorage(STORAGE_GOALS);
     if (!raw || !Array.isArray(raw) || raw.length === 0) {
-      container.innerHTML = '<p class="empty-state"><span class="empty-icon" aria-hidden="true">🎯</span> No goals yet. <a href="goals.html" class="section-link">Create your first goal &rarr;</a></p>';
+      container.innerHTML = '<p class="empty-state"><span class="empty-icon" aria-hidden="true">🎯</span> No goals yet. <a href="goals.html" class="section-link">Create a goal to see its progress here.</a></p>';
       document.getElementById('goalsSummary').textContent = '';
       return;
     }
@@ -106,16 +115,16 @@
       const aOrd = order[effectiveStatus(a)];
       const bOrd = order[effectiveStatus(b)];
       if (aOrd !== bOrd) return aOrd - bOrd;
-      const aProg = Number(a.progress || 0);
-      const bProg = Number(b.progress || 0);
+      const aProg = goalProgress(a);
+      const bProg = goalProgress(b);
       if (aProg !== bProg) return bProg - aProg; // highest first
       return (a.createdAt || '').localeCompare(b.createdAt || '');
     });
     // Summary is computed over ALL goals, independent of the active filter
     const total = sorted.length;
-    const avg = total ? Math.round(sorted.reduce(function(sum, g) { return sum + Number(g.progress || 0); }, 0) / total) : 0;
+    const avg = total ? Math.round(sorted.reduce(function(sum, g) { return sum + goalProgress(g); }, 0) / total) : 0;
     const summary = document.getElementById('goalsSummary');
-    if (summary) summary.textContent = total + ' of ' + total + ' goals · ' + avg + '% average progress';
+    if (summary) summary.textContent = total + (total === 1 ? ' goal' : ' goals') + ' · ' + avg + '% average progress';
 
     const visible = currentFilter === 'all' ? sorted : sorted.filter(function(g) { return effectiveStatus(g) === currentFilter; });
     if (visible.length === 0) {
@@ -123,9 +132,11 @@
       return;
     }
     container.innerHTML = visible.map(function(g) {
-      const pct = Math.min(100, Math.max(0, Math.round(Number(g.progress || 0))));
-      const doneMs = (g.milestones || []).filter(function(m) { return m && m.done; }).length;
-      const totalMs = (g.milestones || []).length;
+      const milestones = Array.isArray(g.milestones) ? g.milestones : [];
+      const milestoneDone = milestones.filter(function(m) { return m && m.done; }).length;
+      const pct = goalProgress(g);
+      const doneMs = milestoneDone;
+      const totalMs = milestones.length;
       const milestoneLine = totalMs ? (doneMs + ' of ' + totalMs + ' milestones done') : '';
       const descHtml = (g.desc || '').trim() ? '<p class="goal-description">' + escapeHtml(g.desc) + '</p>' : '';
       const completeClass = pct === 100 ? 'fill-complete' : '';
@@ -166,36 +177,17 @@
     document.addEventListener('visibilitychange', function() { if (document.visibilityState === 'visible') { renderGoals(); renderStats(); } });
   }
 
-  function seedSkills() {
-    const s = [
-      {id:'sk1',name:'JavaScript',progress:70,type:'skill'},
-      {id:'sk2',name:'Python',progress:50,type:'skill'},
-      {id:'sk3',name:'Data Structures & Algorithms',progress:50,type:'skill'},
-      {id:'sk4',name:'System Design',progress:25,type:'skill'},
-      {id:'sk5',name:'CSS & Design',progress:90,type:'skill'}
-    ];
-    writeStorage(STORAGE_SKILLS, s); return s;
-  }
-  function seedProjects() {
-    const p = [
-      {id:'pj1',name:'Personal Dashboard',progress:50,type:'project'},
-      {id:'pj2',name:'Portfolio Website',progress:90,type:'project'},
-      {id:'pj3',name:'API Integration',progress:60,type:'project'}
-    ];
-    writeStorage(STORAGE_PROJECTS, p); return p;
-  }
-  function getSkills() { let s = readStorage(STORAGE_SKILLS); if (!s || !Array.isArray(s)) s = seedSkills(); return s; }
-  function getProjects() { let p = readStorage(STORAGE_PROJECTS); if (!p || !Array.isArray(p)) p = seedProjects(); return p; }
+  function getSkills() { return readList(STORAGE_SKILLS); }
+  function getProjects() { return readList(STORAGE_PROJECTS); }
 
   function renderSkills() {
     const container = document.getElementById('skillsList'); if (!container) return;
     const skills = getSkills(); const projects = getProjects();
-    if ((!skills || skills.length === 0) && (!projects || projects.length === 0)) {
-      container.innerHTML = '<p class="empty-state"><span class="empty-icon" aria-hidden="true">📊</span> No tracks yet. Add one above.</p>';
+    if (skills.length === 0 && projects.length === 0) {
+      container.innerHTML = '<p class="empty-state"><span class="empty-icon" aria-hidden="true">📊</span> No skills or projects yet. Add a track above to start recording your progress.</p>';
       return;
     }
-    const all = (skills || []).concat(projects || []);
-    container.innerHTML = all.map(function(item) {
+    function renderTrack(item) {
       // Snap at display time only; never write back on load
       const rawPct = Number(item.progress || 0);
       const pct = snapToStep(rawPct);
@@ -217,7 +209,15 @@
         '<button type="button" data-dir="next" data-track-id="' + escapeHtml(item.id) + '" aria-label="Increase progress to ' + nextStep + '%" class="btn-icon" ' + nextDisabled + '><span aria-hidden="true">›</span></button>' +
         '<button type="button" data-action="delete-skill" data-track-id="' + escapeHtml(item.id) + '" class="btn-icon danger stepper-delete" aria-label="Delete ' + escapeHtml(item.name) + '"><span aria-hidden="true">🗑️</span></button>' +
         '</div></div>';
-    }).join('');
+    }
+    const skillMarkup = skills.length
+      ? skills.map(renderTrack).join('')
+      : '<p class="track-group-empty">No skills tracked yet.</p>';
+    const projectMarkup = projects.length
+      ? projects.map(renderTrack).join('')
+      : '<p class="track-group-empty">No projects tracked yet.</p>';
+    container.innerHTML = '<div class="track-group" role="group" aria-labelledby="skillsHeading"><h3 class="track-group-title" id="skillsHeading">Skills</h3>' + skillMarkup + '</div>' +
+      '<div class="track-group" role="group" aria-labelledby="projectsHeading"><h3 class="track-group-title" id="projectsHeading">Projects</h3>' + projectMarkup + '</div>';
   }
 
   function populateProgressSelect() {
@@ -282,7 +282,7 @@
         const btn = e.target.closest('button[data-dir]');
         if (btn) {
           const id = btn.dataset.trackId; const dir = btn.dataset.dir;
-          const all = (getSkills() || []).concat(getProjects() || []);
+          const all = getSkills().concat(getProjects());
           const item = all.find(x => x.id === id); if (!item) return;
           const idx = PROGRESS_STEPS.indexOf(snapToStep(Number(item.progress || 0)));
           let newIdx = dir === 'prev' ? Math.max(0, idx - 1) : Math.min(PROGRESS_STEPS.length - 1, idx + 1);
