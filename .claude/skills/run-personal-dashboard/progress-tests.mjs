@@ -74,6 +74,9 @@ async function getPct(page, id) {
 }
 
 async function addTrack(page, { name, pct, type }) {
+  // The form is collapsed after every save, so open it each time.
+  await page.click('#newTrackBtn');
+  await page.waitForSelector('#trackName', { state: 'visible' });
   await page.fill('#trackName', name);
   await page.selectOption('#trackProgress', String(pct));
   if (type) await page.selectOption('#trackType', type);
@@ -395,6 +398,8 @@ async function runTests() {
 
     await page.setViewportSize({ width: 375, height: 667 });
     await page.waitForTimeout(300);
+    await page.click('#newTrackBtn');
+    await page.waitForSelector('#trackForm', { state: 'visible' });
     assert(await page.locator('#trackForm').isVisible(), 'Track form is visible on a mobile viewport');
     assert(await page.locator('#filterRow').isVisible(), 'Goals filter row is visible on a mobile viewport');
 

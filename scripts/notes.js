@@ -17,6 +17,9 @@ const NoteColor = {
 const ALLOWED_COLORS = Object.values(NoteColor);
 
 let editingNoteId = null;
+
+// The add/edit form, revealed by the "+ New Note" button. Assigned in init.
+let noteFormDisclosure = null;
 let modalOpener = null;
 
 function generateId() {
@@ -179,8 +182,20 @@ function startEditNote(id) {
   if (colorInput) colorInput.checked = true;
   document.getElementById('formTitle').textContent = 'Edit Note';
   document.getElementById('submitBtn').textContent = 'Update Note';
-  document.getElementById('cancelBtn').style.display = 'inline-flex';
-  document.getElementById('noteForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Editing an existing note reveals the form, exactly as the New Note button
+  // does. open() handles the scroll and honours reduced motion.
+  if (noteFormDisclosure) {
+    noteFormDisclosure.open({ focus: false });
+    noteFormDisclosure.trigger.textContent = '✎ Editing…';
+  }
+}
+
+/** Put the form away and restore the trigger's resting label. */
+function closeNoteForm() {
+  if (!noteFormDisclosure) return;
+  noteFormDisclosure.close();
+  noteFormDisclosure.trigger.textContent = '+ New Note';
 }
 
 function cancelEdit() {
@@ -193,7 +208,12 @@ function cancelEdit() {
   if (urlInput) urlInput.value = '';
   document.getElementById('formTitle').textContent = 'New Note';
   document.getElementById('submitBtn').textContent = '+ Save';
-  document.getElementById('cancelBtn').style.display = 'none';
+
+  // Cancel is not hidden here. The form is a disclosure now, so it is on screen
+  // and the user may have typed something to discard. Collapsing the panel is
+  // what takes Cancel out of view. restoreFocus stays on so Cancel does not
+  // disappear from under the keyboard user who just pressed it.
+  closeNoteForm();
 }
 
 function confirmDeleteNote(id) {
@@ -244,6 +264,15 @@ function trapModalFocus(event) {
 }
 
 function init() {
+  // The form starts collapsed, revealed by "+ New Note".
+  noteFormDisclosure = window.FormDisclosure
+    ? window.FormDisclosure.attach(
+        document.getElementById('newNoteBtn'),
+        document.getElementById('noteFormPanel'),
+        { focusTarget: '#noteTitle' }
+      )
+    : null;
+
   renderNotes();
   const form = document.getElementById('noteForm');
   if (form) {
@@ -277,13 +306,13 @@ function init() {
         editingNoteId = null;
         document.getElementById('formTitle').textContent = 'New Note';
         document.getElementById('submitBtn').textContent = '+ Save';
-        document.getElementById('cancelBtn').style.display = 'none';
       } else {
         createNote({ title: title, body: body, url: url || '', color: color });
       }
       if (titleInput) titleInput.value = '';
       if (bodyInput) bodyInput.value = '';
       if (urlInput) urlInput.value = '';
+      closeNoteForm();
       renderNotes();
     };
   }

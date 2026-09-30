@@ -236,6 +236,17 @@
     setTimeout(function() { t.classList.remove('show'); }, 3000);
   }
 
+  // The add form starts collapsed, revealed by "+ Add Track". Tracks have no
+  // edit path -- progress is changed with the stepper on each row -- so this is
+  // purely an add-and-collapse disclosure.
+  var trackFormDisclosure = window.FormDisclosure
+    ? window.FormDisclosure.attach(
+        document.getElementById('newTrackBtn'),
+        document.getElementById('trackFormPanel'),
+        { focusTarget: '#trackName' }
+      )
+    : null;
+
   function bindSkillsDelegation() {
     const form = document.getElementById('trackForm');
     if (form) {
@@ -247,7 +258,21 @@
         const item = { id: Date.now().toString(36) + Math.random().toString(36).slice(2), name: name, progress: pct, type: type };
         if (type === 'project') { const p = getProjects(); p.push(item); writeStorage(STORAGE_PROJECTS, p); }
         else { const s = getSkills(); s.push(item); writeStorage(STORAGE_SKILLS, s); }
-        f.reset(); renderSkills(); showMessage('Track added', 'success');
+        f.reset();
+        // Put the form away again; focus returns to the trigger.
+        if (trackFormDisclosure) trackFormDisclosure.close();
+        renderSkills(); showMessage('Track added', 'success');
+      });
+    }
+    // Cancel has no handler anywhere on this page, so give it one: it should
+    // clear the fields and collapse the panel rather than do nothing.
+    const trackCancel = document.getElementById('cancelBtn');
+    if (trackCancel) {
+      trackCancel.addEventListener('click', function() {
+        const f = document.getElementById('trackForm');
+        if (f) f.reset();
+        populateProgressSelect();
+        if (trackFormDisclosure) trackFormDisclosure.close();
       });
     }
     const list = document.getElementById('skillsList');

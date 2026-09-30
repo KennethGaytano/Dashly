@@ -10,6 +10,9 @@ const STORAGE_KEY = 'dashboard_events';
 
 let editingEventId = null;
 
+// The add/edit form, revealed by the "+ Add event" button. Assigned in init.
+let eventFormDisclosure = null;
+
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
@@ -324,14 +327,18 @@ function setEditMode(ev) {
     if (dateInput) dateInput.value = ev.date;
     if (urlInput) urlInput.value = ev.url || '';
     if (submitBtn) submitBtn.textContent = 'Save changes';
-    if (cancelBtn) cancelBtn.hidden = false;
     if (banner) {
       banner.hidden = false;
       banner.textContent = 'Editing: ' + ev.title + ' — ' + formatEventDate(ev.date);
     }
     if (titleInput) {
+      // Editing an existing event reveals the form, exactly as the Add button
+      // does. open() handles the scroll and honours reduced motion.
+      if (eventFormDisclosure) {
+        eventFormDisclosure.open({ focus: false });
+        eventFormDisclosure.trigger.textContent = '✎ Editing…';
+      }
       titleInput.focus({ preventScroll: true });
-      form.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
     }
   } else {
     editingEventId = null;
@@ -341,9 +348,16 @@ function setEditMode(ev) {
     if (urlInput) urlInput.value = '';
     if (dateInput) dateInput.value = selectedDateKey() || localDateKey();
     if (submitBtn) submitBtn.textContent = 'Add event';
-    if (cancelBtn) cancelBtn.hidden = true;
     if (banner) banner.hidden = true;
   }
+}
+
+/** Put the form away and return the trigger to its resting label. Called after
+ *  a save, and by Cancel. The user is left looking at the day list. */
+function closeEventForm() {
+  if (!eventFormDisclosure) return;
+  eventFormDisclosure.close();
+  eventFormDisclosure.trigger.textContent = '+ Add event';
 }
 
 function startEditEvent(eventId) {
@@ -455,9 +469,11 @@ function handleSubmit(e) {
   }
 
   setEditMode(null);
+  closeEventForm();
   refreshAll();
-  const titleAfter = document.getElementById('eventTitle');
-  if (titleAfter) titleAfter.focus();
+  // closeEventForm() returns focus to the trigger. Do not refocus #eventTitle
+  // here: the panel is hidden now, and focusing a hidden field strands the
+  // user with focus on an element they cannot see.
 }
 
 function selectDay(key) {
@@ -479,6 +495,17 @@ function selectDay(key) {
 /* ===== Init ===== */
 
 function initEvents() {
+  // The form starts collapsed, revealed by "+ Add event". Selecting a day
+  // updates the list but leaves the form alone: opening a calendar should not
+  // summon an input panel.
+  eventFormDisclosure = window.FormDisclosure
+    ? window.FormDisclosure.attach(
+        document.getElementById('newEventBtn'),
+        document.getElementById('eventFormPanel'),
+        { focusTarget: '#eventTitle' }
+      )
+    : null;
+
   const form = document.getElementById('eventForm');
   if (form) form.addEventListener('submit', handleSubmit);
 
@@ -486,6 +513,7 @@ function initEvents() {
   if (cancelBtn) {
     cancelBtn.addEventListener('click', () => {
       setEditMode(null);
+      closeEventForm();
       refreshAll();
     });
   }

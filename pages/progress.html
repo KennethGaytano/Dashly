@@ -82,7 +82,17 @@
 
         <!-- Add/Edit Skill or Project -->
         <section>
-            <h2 id="formTitle">Add Track</h2>
+            <div class="section-header">
+                <h2 id="formTitle">Add Track</h2>
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="newTrackBtn"
+                    aria-expanded="false"
+                    aria-controls="trackFormPanel"
+                >+ Add Track</button>
+            </div>
+            <div id="trackFormPanel" hidden>
             <div class="card">
                 <form id="trackForm">
                     <div class="form-row">
@@ -111,6 +121,7 @@
                         <button type="button" id="cancelBtn" class="btn btn-secondary">Cancel</button>
                     </div>
                 </form>
+            </div>
             </div>
         </section>
 
@@ -177,6 +188,7 @@
     <div id="toast" class="toast" role="alert" aria-live="polite"></div>
 
     <script src="../scripts/nav.js"></script>
+    <script src="../scripts/form-disclosure.js"></script>
     <script src="../scripts/progress.js"></script>
 </body>
 </html>

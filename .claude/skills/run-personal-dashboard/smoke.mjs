@@ -67,6 +67,10 @@ async function runSmokeTest() {
     console.log('4. Testing interactive elements on Tasks page...');
     await page.goto(`${BASE_URL}/pages/tasks.html`);
 
+    // The add form is collapsed on load, so open it before typing.
+    await page.click('#newTaskBtn');
+    await page.waitForSelector('#taskTitle', { state: 'visible' });
+
     // Type a new task
     await page.fill('#taskTitle', 'Complete skill generator');
     console.log('   Typed new task title');

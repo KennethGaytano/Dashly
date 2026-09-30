@@ -311,6 +311,16 @@ section > h2 {
     text-decoration: underline;
 }
 
+/* The Quick Notes "View all" link moved below the note list when the composer
+   became a disclosure, so the header holds only the Add button. Without a
+   stacked header the button would sit right-aligned next to the heading, which
+   leaves a long empty gap at narrow widths. */
+.section-link-wrap {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.75rem;
+}
+
 /* ===== Card (generic) ===== */
 .card {
     background: var(--bg-card);

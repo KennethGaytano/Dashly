@@ -58,6 +58,7 @@
         <!-- Add/Edit Goal Form -->
         <section>
             <h2 id="formTitle">Add a Goal</h2>
+            <div id="goalFormPanel" hidden>
             <div class="card">
                 <form id="goalForm" class="task-form">
                     <div class="form-group">
@@ -123,13 +124,20 @@
                     </div>
                 </form>
             </div>
+            </div>
         </section>
 
         <!-- Goal Cards -->
         <section>
             <div class="goals-header">
                 <h2>My Goals</h2>
-                <button type="button" class="btn btn-primary" id="newGoalBtn">+ New Goal</button>
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="newGoalBtn"
+                    aria-expanded="false"
+                    aria-controls="goalFormPanel"
+                >+ New Goal</button>
             </div>
 
             <div id="goalsList" class="goals-list">
@@ -179,6 +187,7 @@
     <div id="toast" class="toast" role="alert" aria-live="polite"></div>
 
     <script src="../scripts/nav.js"></script>
+    <script src="../scripts/form-disclosure.js"></script>
     <script src="../scripts/goals.js"></script>
 
 </body>

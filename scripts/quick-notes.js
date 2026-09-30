@@ -126,6 +126,29 @@
   function init() {
     renderQuickNotes();
 
+    // The composer starts collapsed behind "+ Quick Note", so the home page
+    // shows the notes rather than an input box.
+    const disclosure = window.FormDisclosure
+      ? window.FormDisclosure.attach(
+          document.getElementById('newQuickNoteBtn'),
+          document.getElementById('quickNotePanel'),
+          { focusTarget: '#quickNoteTitle' }
+        )
+      : null;
+
+    // Cancel discards the draft and puts the composer away, matching every
+    // other form on the site. The other five hide their Cancel until an edit is
+    // in progress, but this one has no edit mode, so Cancel is the only way to
+    // back out of a half-typed thought short of Escape.
+    const cancelBtn = document.getElementById('cancelQuickNoteBtn');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', function () {
+        const input = document.getElementById('quickNoteTitle');
+        if (input) input.value = '';
+        if (disclosure) disclosure.close();
+      });
+    }
+
     const form = document.getElementById('quickNoteForm');
     if (form) {
       form.addEventListener('submit', function(e) {
@@ -153,6 +176,9 @@
 
         if (saveNotes(notes)) {
           input.value = '';
+          // One quick thought, one click: put the composer away again so the
+          // new note in the list below is what the user is left looking at.
+          if (disclosure) disclosure.close();
           showMessage('Note created.', 'success');
           renderQuickNotes();
         }

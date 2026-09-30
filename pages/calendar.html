@@ -80,7 +80,20 @@
         </section>
 
         <section id="eventPanel">
-            <h2>Events for <span id="selectedDateLabel">today</span></h2>
+            <div class="section-header">
+                <h2>Events for <span id="selectedDateLabel">today</span></h2>
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="newEventBtn"
+                    aria-expanded="false"
+                    aria-controls="eventFormPanel"
+                >+ Add event</button>
+            </div>
+            <div class="card">
+                <div id="eventList" role="list" aria-label="Events on selected day"></div>
+            </div>
+            <div id="eventFormPanel" hidden>
             <div class="card">
                 <form id="eventForm" class="event-form" aria-label="Add or edit event">
                     <p id="editBanner" class="edit-banner" role="status" aria-live="polite" hidden></p>
@@ -98,7 +111,7 @@
                             <input type="time" id="eventTime" />
                         </div>
                         <button type="submit" class="btn btn-primary btn-submit">Add event</button>
-                        <button type="button" id="cancelEventBtn" class="btn btn-secondary btn-cancel" hidden>Cancel</button>
+                        <button type="button" id="cancelEventBtn" class="btn btn-secondary btn-cancel">Cancel</button>
                     </div>
                     <div class="form-row form-row-secondary">
                         <div class="form-group event-field-wide">
@@ -113,8 +126,6 @@
                     </div>
                 </form>
             </div>
-            <div class="card" style="margin-top:1rem;">
-                <div id="eventList" role="list" aria-label="Events on selected day"></div>
             </div>
         </section>
 
@@ -170,6 +181,7 @@
 
     <script src="../scripts/link-utils.js"></script>
     <script src="../scripts/nav.js"></script>
+    <script src="../scripts/form-disclosure.js"></script>
     <script src="../scripts/calendar.js"></script>
     <script src="../scripts/calendar-events.js"></script>
 

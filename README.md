@@ -50,6 +50,20 @@ Below 768px the sidebar becomes an off-canvas drawer and the app gains two piece
 - **Touch targets** are held to 44px throughout. Where the visual design is smaller by intent — the 24px task checkbox, the 24px note colour swatch — a transparent overlay widens the tappable area without changing what is drawn.
 - **The calendar form** stacks to one field per row on a phone and one column at tablet width, five-across only on desktop. Its old layout lived in inline `style` attributes, which no media query can override.
 
+## Forms are hidden until you ask
+
+Opening a page shows the content, not a wall of input panels. All six add/edit forms start collapsed behind a button and open on click, on desktop and mobile alike.
+
+- **One button per form.** Tasks has `+ Add Task`, Calendar `+ Add event`, Notes `+ New Note`, Goals `+ New Goal`, Progress `+ Add Track`, and the home page `+ Quick Note`. Each is a real `<button>` with `aria-expanded` and `aria-controls`, and each toggles — a second click puts the form away again.
+- **Editing an existing item opens the form for you.** The pencil button on a task, event, note or goal reveals the same panel, already filled in, with the heading and submit button switched to their edit wording. Nothing extra to click.
+- **Escape closes it**, as do Cancel and saving. Focus returns to the button that opened it, so keyboard and screen reader users are never dropped at the top of the document.
+- **Every form has a working Cancel, and it is visible whenever the form is.** The home composer gained one (`#cancelQuickNoteBtn`); the other five already had one but used to hide it until you started *editing*, which was correct while the forms sat permanently on the page and wrong once they became disclosures — opening a form to add something left no way to back out short of Escape. Cancel now shows whenever the form is on screen, and collapsing the panel is what takes it away. On a phone the actions stack full-width, so Cancel sits under the submit button rather than beside it.
+- **The panels use the `hidden` attribute**, not a CSS rule, so a collapsed form is genuinely out of the tab order and out of the accessibility tree rather than merely looking invisible.
+- **The shared behaviour lives in `form-disclosure.js`.** Each page supplies only the trigger and the panel, so all six behave identically and a fix lands everywhere at once.
+- **The calendar deliberately does not open the form when you pick a day.** Selecting a day updates the event list; the form stays collapsed until you ask to add something, because opening a calendar should not summon an input panel.
+
+`form-disclosure-tests.mjs` covers the contract on all six pages: collapsed on load, `aria-expanded` tracks state, a collapsed form is not focusable, the trigger toggles, Escape closes without closing something unopened, Edit opens the form, and saving and cancelling both collapse it.
+
 ## Data storage
 
 | Key | Contents |
@@ -88,6 +102,7 @@ Each script starts its own server and shuts it down afterwards, exiting non-zero
 node mobile-audit.mjs        # geometry: 6 widths x 6 pages, seeded with data
 node mobile-nav-tests.mjs    # app bar / tab bar / drawer behaviour at 390px
 node layout-chain.mjs 320    # names whatever is forcing a horizontal scroll
+node form-disclosure-tests.mjs # collapsed-form contract on all six pages
 ```
 
 `mobile-audit.mjs` reports horizontal overflow, interactive targets under 44px, and form controls under 16px (which make iOS zoom the viewport on focus). It seeds `localStorage` first, so unlike `mobile-shots.mjs` it exercises the content views rather than only empty states.

@@ -101,7 +101,15 @@ async function runTests() {
     // -------------------------------------------------------------
     // Test 3: Add Task (To Do, High Priority, Description, Due Date and Time)
     // -------------------------------------------------------------
+    /** The add/edit form is collapsed on load. Open it the way a user does. */
+    async function openTaskForm() {
+      if (await page.locator('#taskTitle').isVisible()) return;
+      await page.click('#newTaskBtn');
+      await page.waitForSelector('#taskTitle', { state: 'visible' });
+    }
+
     console.log('\n--- Test Group 3: Add Task Functionality ---');
+    await openTaskForm();
     await page.fill('#taskTitle', 'Finish Q4 report');
     await page.fill('#taskDescription', 'Compile financial figures and executive summary');
 
@@ -143,6 +151,7 @@ async function runTests() {
     // -------------------------------------------------------------
     console.log('\n--- Test Group 4: Add Multiple Tasks with Different Statuses ---');
     // Add In Progress task with a date but no time
+    await openTaskForm();
     await page.fill('#taskTitle', 'Write Unit Tests');
     await page.fill('#taskDueDate', '2026-10-20');
     await page.selectOption('#taskStatus', 'in_progress');
@@ -157,6 +166,7 @@ async function runTests() {
     assert(await page.locator('#inProgressList .task-item .task-due-time').count() === 0, 'Date-only tasks do not display a due time');
 
     // Add Completed task
+    await openTaskForm();
     await page.fill('#taskTitle', 'Setup Dev Environment');
     await page.selectOption('#taskStatus', 'completed');
     await page.selectOption('#taskPriority', 'low');
@@ -205,6 +215,7 @@ async function runTests() {
     assert(submitBtnText.includes('Update'), 'Submit button changes to "Update Task"');
 
     // Change title, priority, and due time
+    // (the edit button already opened the form, so no openTaskForm here)
     await page.fill('#taskTitle', 'Finish Q4 report (REVISED)');
     await page.locator('#taskDueTime').fill('16:45');
     await page.selectOption('#taskPriority', 'low');
@@ -292,6 +303,7 @@ async function runTests() {
     // Test 10: XSS Sanitization
     // -------------------------------------------------------------
     console.log('\n--- Test Group 10: Input Sanitization / Security ---');
+    await openTaskForm();
     await page.fill('#taskTitle', '<script>alert("xss")</script>Secure Task');
     await page.fill('#taskDescription', '<img src="x" onerror="alert(1)">Description');
     await page.click('#submitBtn');
@@ -302,14 +314,65 @@ async function runTests() {
     assert(xssTitleText.includes('&lt;script&gt;'), 'HTML tags sanitized in title');
 
     // -------------------------------------------------------------
-    // Test 11: Mobile Responsiveness
+    // Test 11: Malformed stored data must not break the page
     // -------------------------------------------------------------
-    console.log('\n--- Test Group 11: Mobile Viewport Rendering ---');
+    console.log('\n--- Test Group 11: Corrupt Storage Recovery ---');
+
+    const errorsDuring = [];
+    page.on('pageerror', e => errorsDuring.push(e.message));
+
+    // getTasks() used to trust the parsed shape. An object instead of an array
+    // made renderTasks call .filter on a non-array, and a null entry made the
+    // status grouping read .status of null. Either one threw an uncaught
+    // TypeError and left the page with no task list at all.
+    const probe = async (raw, label) => {
+      errorsDuring.length = 0;
+      await page.evaluate(v => localStorage.setItem('dashboard_tasks', v), raw);
+      await page.reload();
+      await page.waitForTimeout(400);
+      const items = await page.locator('.task-item').count();
+      const empties = await page.locator('.empty-state').count();
+      assert(errorsDuring.length === 0, `${label}: no uncaught error (${errorsDuring.join('; ') || 'none'})`);
+      assert(items + empties > 0, `${label}: the page still renders a task list`);
+      return items;
+    };
+
+    await probe('{"not":"an array"}', 'object instead of array');
+    await probe('[null]', 'array containing null');
+    await probe('"just a string"', 'bare string');
+    await probe('[1,2,3]', 'array of numbers');
+    await probe('{oops', 'unparseable JSON');
+
+    // A task whose status is unrecognised used to match none of the three
+    // filters and disappear, which reads as data loss.
+    await page.evaluate(() => localStorage.setItem('dashboard_tasks', JSON.stringify([
+      { id: 'odd', title: 'Odd status', status: 'banana', priority: 'low', description: '', url: '' },
+      { id: 'ok1', title: 'Normal todo', status: 'todo', priority: 'low', description: '', url: '' },
+      { id: 'ok2', title: 'Done thing', status: 'completed', priority: 'low', description: '', url: '' }
+    ])));
+    await page.reload();
+    await page.waitForTimeout(400);
+    eq(await page.locator('.task-item').count(), 3, 'every stored task is visible');
+    eq(await page.locator('#todoList .task-item').count(), 2, 'an unknown status falls into To Do with the open work');
+    eq(await page.locator('#completedList .task-item').count(), 1, 'completed stays in Completed');
+
+    // -------------------------------------------------------------
+    // Test 12: Mobile Responsiveness
+    // -------------------------------------------------------------
+    console.log('\n--- Test Group 12: Mobile Viewport Rendering ---');
     await page.setViewportSize({ width: 375, height: 667 });
     await page.waitForTimeout(300);
 
+    // The form is collapsed at this point, so open it before measuring it.
+    await openTaskForm();
     const isMobileVisible = await page.locator('#taskForm').isVisible();
     assert(isMobileVisible, 'Task form is responsive and visible on mobile viewport');
+
+    function eq(a, b, message) {
+      testCount++;
+      if (a === b) { passedCount++; console.log(`  ✓ ${message}`); }
+      else { failedCount++; console.error(`  ✗ FAIL: ${message} (${a} vs ${b})`); }
+    }
 
     // Clean up
     await browser.close();

@@ -171,11 +171,15 @@ Personal_DashBoard/
     ├── smoke.mjs           # Cross-page smoke test
     ├── task-tests.mjs      # Task management test suite
     ├── goals-tests.mjs     # Goals test suite
+    ├── calendar-tests.mjs  # Calendar test suite (grid, CRUD, delete dialog)
+    ├── form-disclosure-tests.mjs # Collapsed-form contract across all 6 pages
+    ├── disclosure-shots.mjs # Screenshots: closed vs open, phone + desktop
     ├── progress-tests.mjs  # Progress page test suite
     ├── mobile-audit.mjs    # Mobile geometry sweep, 6 widths x 6 pages
     ├── mobile-nav-tests.mjs# App bar / tab bar / drawer behaviour
     ├── layout-chain.mjs    # Names the element forcing a horizontal scroll
     ├── width-sweep.mjs     # 16 widths x 6 pages, seeded with hostile content
+    ├── scan-encoding.mjs   # Flags mojibake / lost emoji in product files
     ├── mobile-shots.mjs    # Quick mobile screenshots (no seeded data)
     ├── package.json        # Node dependencies
     └── node_modules/       # Playwright installed here
@@ -350,6 +354,16 @@ console.log('Checkbox persisted:', isChecked);
 - **Screenshots are the ground truth:** When verifying a UI change, compare before/after screenshots. The PNG files in `$CLAUDE_JOB_DIR/tmp/` are your test output.
 - **`mobile-audit.mjs` seeds data; `mobile-shots.mjs` does not.** The older screenshot script launches with empty `localStorage`, so every content view renders its empty state. Use the audit script for anything that depends on real content — it caught layout bugs the empty captures could never show.
 - **A full-page screenshot cannot show a `position: fixed` element honestly.** Playwright renders beyond the viewport without resizing, so the tab bar lands mid-image and looks like an overlap bug. `mobile-audit.mjs` handles this by hiding the bar for full-page shots and taking a separate viewport-only shot (`audit-<width>-chrome.png`) of the real chrome.
+- **The calendar has two scripts on one grid, so it had two selection handlers.** `calendar.js` and `calendar-events.js` each attached a click listener to `#calendarGrid` and each set the `selected` class plus its own ARIA state (`aria-pressed` vs `aria-selected`). Because both cleared `.selected` before the other could find the previously selected cell, `aria-selected` accumulated: after clicking three days the grid claimed three days were selected. `calendar-events.js` owns selection, since it also has to update the form, the day list and the dots; `calendar.js` now only renders and handles Prev/Next. `calendar-tests.mjs` asserts the state is expressed exactly once.
+- **Every form has a working Cancel, visible whenever the form is open.** The home Quick Note composer was the only one with no Cancel at all (`#cancelQuickNoteBtn`, new). The other five had one but hid it until an *edit* began, which was right when the forms were permanently visible and wrong once they became disclosures: opening a form to add something left no way to back out short of Escape. Cancel is now always visible while the form is on screen, and collapsing the panel is what takes it out of view. The `display:none` / `hidden` juggling in `startEdit*` and `cancelEdit` is gone from all five.
+- **Every add/edit form is a disclosure.** All six forms (task, event, note, goal, track, home quick note) start collapsed behind a button and open on click, on desktop and mobile. `scripts/form-disclosure.js` owns the behaviour; each page only supplies the trigger and the panel. The panel is hidden with the `hidden` attribute, not a CSS rule, so it leaves the tab order properly. Three things follow from that and are easy to get wrong:
+  - **Editing an existing item has to call `open()`.** `startEditTask`, `startEditEvent`, `startEditNote` and `startEditGoal` each reveal the form, or a user clicks Edit and sees nothing.
+  - **Saving has to call `close()` on the add path too.** `cancelEdit()` already ran on the edit path, so only guarding the add path with `if (!editingTaskId)` is correct. Goals, Notes, Tasks and Calendar each forgot this once.
+  - **`restoreFocus` matters on Cancel.** Without it the Cancel button hides while holding focus, stranding the keyboard user.
+- **Behaviours in a shared controller need one owner.** When two scripts both handled clicks on `#calendarGrid`, they competed over the same ARIA state and `aria-selected` accumulated on every previously selected day. `calendar-events.js` now owns selection outright.
+- **`localStorage` is not a database, so verify what you parse.** `getTasks()` returned whatever `JSON.parse` produced. An object instead of an array made `renderTasks` call `.filter` on a non-array, and a `null` entry made the status grouping read `.status` of null; both threw an uncaught `TypeError` and left the page with no task list at all. It now checks `Array.isArray` and drops entries that are not objects with an id. Separately, a task with an unrecognised `status` matched none of the three `renderTasks` filters and vanished, which reads as data loss; unknown statuses now fall into To Do while the three known ones keep their own lists. `task-tests.mjs` covers five malformed shapes plus the unknown status.
+- **A PowerShell write-back silently destroyed an emoji.** `pages/tasks.html` reached `main` with the Tasks tab icon as a literal `?` instead of `✅` — no test noticed, because the icon is `aria-hidden` and no assertion looked at it. Write files that contain non-ASCII from Node, and run `scan-encoding.mjs` (scans every product file for replacement chars, mojibake, and a bare `?` where an emoji belongs) after any bulk edit.
+- **A failed assertion is not always a bug in the app.** Four of the seven failures the calendar suite produced on its first run were wrong expectations in the test: today legitimately still appears in an adjacent month's grid as a leading or trailing day; `#eventTitle` carries `required`, so the browser blocks the submit before `handleSubmit` can raise a toast; and a payload title is inserted with `textContent`, so `document.content()` contains the escaped `&lt;img …&gt;` and a naive substring search for `onerror=alert` matches the harmless escaped text. Probe the DOM for created elements instead of grepping the serialised HTML.
 - **The driver is for poking; the test scripts are for regression.** Use `driver.mjs` to explore, and the `*-tests.mjs` scripts to prove nothing broke.
 - **Port conflicts are common:** If tests fail mysteriously, check port 3000 first.
 - **When a page overflows horizontally, do not guess at the cause.** `layout-chain.mjs` brute-forces the DOM: it hides one element at a time and watches `window.innerWidth`, which names the origin. Two real bugs here (a flex `<input>` without `min-width: 0`, and `body` being `display: flex` in a row with a fixed sidebar) were both invisible to static reading and to measuring only the element you suspected.
@@ -361,7 +375,9 @@ console.log('Checkbox persisted:', isChecked);
 ## Summary
 
 - **Smoke test:** `cd .claude/skills/run-personal-dashboard && node smoke.mjs`
-- **Behaviour suites:** `node task-tests.mjs`, `node goals-tests.mjs`, `node progress-tests.mjs` — run one at a time, they all bind port 3000
+- **Behaviour suites:** `node task-tests.mjs`, `node goals-tests.mjs`, `node progress-tests.mjs`, `node calendar-tests.mjs` — run one at a time, they all bind port 3000
+- **Collapsed forms:** `node form-disclosure-tests.mjs` — the open/close contract across all six pages
+- **Disclosure screenshots:** `node disclosure-shots.mjs` — closed vs open form at 390px and 1280px
 - **Mobile regression:** `node mobile-audit.mjs` (geometry across 6 widths), `node mobile-nav-tests.mjs` (app bar / tab bar / drawer behaviour), `node width-sweep.mjs` (16 widths, hostile content — run `SHOT=1 node width-sweep.mjs` for PNGs)
 - **Overflow diagnosis:** `node layout-chain.mjs [width]` — names the element forcing a horizontal scroll
 - **Screenshots:** `$CLAUDE_JOB_DIR/tmp/*.png`

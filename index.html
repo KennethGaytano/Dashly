@@ -121,9 +121,15 @@
         <section>
             <div class="section-header section-header--stacked">
                 <h2>Quick Notes</h2>
-                <a href="pages/notes.html" class="section-link">View all →</a>
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="newQuickNoteBtn"
+                    aria-expanded="false"
+                    aria-controls="quickNotePanel"
+                >+ Quick Note</button>
             </div>
-            <div class="card quick-note-composer">
+            <div class="card quick-note-composer" id="quickNotePanel" hidden>
                 <form id="quickNoteForm" class="quick-note-form">
                     <label for="quickNoteTitle" class="visually-hidden">Quick note title</label>
                     <input
@@ -135,14 +141,19 @@
                         aria-required="true"
                     >
                     <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" id="cancelQuickNoteBtn" class="btn btn-secondary">Cancel</button>
                 </form>
             </div>
             <div id="quickNotesList" class="notes-grid"></div>
+            <div class="section-link-wrap">
+                <a href="pages/notes.html" class="section-link">View all →</a>
+            </div>
         </section>
 
     </main>
 
     <script src="scripts/nav.js"></script>
+    <script src="scripts/form-disclosure.js"></script>
     <script src="scripts/home.js"></script>
     <script src="scripts/pomodoro.js"></script>
     <script src="scripts/quick-notes.js"></script>

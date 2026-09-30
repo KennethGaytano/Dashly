@@ -58,6 +58,9 @@ async function storedGoal(page, title) {
 
 /** Add a goal through the real form, optionally with milestone text rows. */
 async function createGoal(page, { title, status, progress, milestones = [] }) {
+  // The form is collapsed after every save, so open it each time.
+  await page.click('#newGoalBtn');
+  await page.waitForSelector('#goalTitle', { state: 'visible' });
   await page.fill('#goalTitle', title);
   if (status) await page.selectOption('#goalStatus', status);
   if (progress !== undefined) await page.fill('#goalProgress', String(progress));

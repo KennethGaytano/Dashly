@@ -55,7 +55,17 @@
 
         <!-- Add/Edit Task Form -->
         <section>
-            <h2 id="formTitle">Add a Task</h2>
+            <div class="section-header">
+                <h2 id="formTitle">Add a Task</h2>
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="newTaskBtn"
+                    aria-expanded="false"
+                    aria-controls="taskFormPanel"
+                >+ Add Task</button>
+            </div>
+            <div id="taskFormPanel" hidden>
             <div class="card">
                 <form id="taskForm" class="task-form">
                     <div class="form-group">
@@ -146,6 +156,7 @@
                     </div>
                 </form>
             </div>
+            </div>
         </section>
 
         <!-- Task Lists Grouped by Status -->
@@ -178,7 +189,7 @@
             <span class="tab-label">Home</span>
         </a>
         <a href="tasks.html" class="tab is-active" aria-current="page">
-            <span class="tab-icon" aria-hidden="true">?</span>
+            <span class="tab-icon" aria-hidden="true">✅</span>
             <span class="tab-label">Tasks</span>
         </a>
         <a href="calendar.html" class="tab">
@@ -213,6 +224,7 @@
 
     <script src="../scripts/link-utils.js"></script>
     <script src="../scripts/nav.js"></script>
+    <script src="../scripts/form-disclosure.js"></script>
     <script src="../scripts/tasks.js"></script>
 </body>
 </html>

@@ -8,6 +8,9 @@ const STORAGE_KEY = 'dashboard_goals';
 const GoalStatus = { ACTIVE: 'active', PAUSED: 'paused', COMPLETED: 'completed' };
 
 let editingGoalId = null;
+
+// The add/edit form, revealed by the "+ New Goal" button. Assigned in init.
+let goalFormDisclosure = null;
 let modalOpener = null;
 
 function generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2); }
@@ -211,6 +214,9 @@ function handleFormSubmit(e) {
   let ok = false;
   const wasEdit = !!editingGoalId;
   if (editingGoalId) { ok = updateGoal(editingGoalId, data); if (ok) cancelEdit(); } else { ok = createGoal(data) !== null; }
+  // A successful add closes the form too. cancelEdit() already closed it on the
+  // edit path, so this only bites the add path.
+  if (ok && !wasEdit) closeGoalForm();
   if (ok) { f.reset(); const c = document.getElementById('milestoneRows'); if (c) { c.innerHTML = ''; addMilestoneRow(); } renderGoals(); showMessage(wasEdit ? 'Goal updated' : 'Goal added', 'success'); }
 }
 function startEditGoal(id) {
@@ -222,9 +228,14 @@ function startEditGoal(id) {
   // Load milestones
   const container = document.getElementById('milestoneRows');
   if (container) { container.innerHTML = ''; (g.milestones || []).forEach(m => addMilestoneRow(m.text)); if (!g.milestones || g.milestones.length === 0) addMilestoneRow(); }
-  document.getElementById('formTitle').textContent = 'Edit Goal'; document.getElementById('submitBtn').textContent = 'Update Goal'; document.getElementById('cancelBtn').style.display = 'inline-flex'; document.getElementById('goalForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('formTitle').textContent = 'Edit Goal'; document.getElementById('submitBtn').textContent = 'Update Goal';
+  // Editing reveals the form, exactly as "+ New Goal" does. open() scrolls and
+  // honours reduced motion, replacing the old scrollIntoView call.
+  if (goalFormDisclosure) { goalFormDisclosure.open({ focus: false }); goalFormDisclosure.trigger.textContent = '✎ Editing…'; }
 }
-function cancelEdit() { editingGoalId = null; document.getElementById('goalForm').reset(); document.getElementById('formTitle').textContent = 'Add a Goal'; document.getElementById('submitBtn').textContent = '+ Add Goal'; document.getElementById('cancelBtn').style.display = 'none'; }
+function cancelEdit() { editingGoalId = null; document.getElementById('goalForm').reset(); document.getElementById('formTitle').textContent = 'Add a Goal'; document.getElementById('submitBtn').textContent = '+ Add Goal'; closeGoalForm(); }
+/** Put the form away and restore the trigger's resting label. */
+function closeGoalForm() { if (!goalFormDisclosure) return; goalFormDisclosure.close(); goalFormDisclosure.trigger.textContent = '+ New Goal'; }
 function confirmDeleteGoal(id) { const g = getGoalsWithSeed().find(x => x.id === id); if (!g) return; const modal = document.getElementById('confirmModal'); document.getElementById('confirmMessage').textContent = `Are you sure you want to delete "${g.title}"?`; modalOpener = document.activeElement; modal.style.display = 'flex'; modal.dataset.goalId = id; document.getElementById('cancelModal').focus(); }
 function handleConfirmDelete() {
   const modal = document.getElementById('confirmModal');
@@ -260,10 +271,38 @@ function showMessage(msg, type='info') { const t = document.getElementById('toas
 window.startEditGoal = startEditGoal; window.confirmDeleteGoal = confirmDeleteGoal; window.handleToggleMilestone = toggleMilestone;
 
 function init() {
+  // The form starts collapsed, revealed by "+ New Goal". The trigger lives in
+  // the My Goals header, next to the list it adds to.
+  goalFormDisclosure = window.FormDisclosure
+    ? window.FormDisclosure.attach(
+        document.getElementById('newGoalBtn'),
+        document.getElementById('goalFormPanel'),
+        { focusTarget: '#goalTitle' }
+      )
+    : null;
   renderGoals();
   const f = document.getElementById('goalForm'); if (f) f.addEventListener('submit', handleFormSubmit);
-  const c = document.getElementById('cancelBtn'); if (c) { c.addEventListener('click', cancelEdit); c.style.display = 'none'; }
-  const nb = document.getElementById('newGoalBtn'); if (nb) nb.addEventListener('click', () => { const form = document.getElementById('goalForm'); if (editingGoalId) cancelEdit(); form.scrollIntoView({ behavior: 'smooth', block: 'start' }); document.getElementById('goalTitle').focus(); });
+  // Cancel is always visible now: the form is a disclosure, so whenever it is
+  // on screen the user may have typed something to discard. Collapsing the
+  // panel is what takes Cancel away.
+  const c = document.getElementById('cancelBtn'); if (c) c.addEventListener('click', cancelEdit);
+  // "+ New Goal" is the disclosure trigger, so FormDisclosure already toggles it
+  // on click. This extra listener runs after that toggle and only handles the
+  // one thing the toggle cannot know about: an edit left in progress, which has
+  // to be abandoned. It resets to add-mode without closing, because the toggle
+  // has just opened the panel.
+  const nb = document.getElementById('newGoalBtn');
+  if (nb) nb.addEventListener('click', () => {
+    if (!editingGoalId) return;
+    editingGoalId = null;
+    document.getElementById('goalForm').reset();
+    document.getElementById('formTitle').textContent = 'Add a Goal';
+    document.getElementById('submitBtn').textContent = '+ Add Goal';
+    const rows = document.getElementById('milestoneRows');
+    if (rows) { rows.innerHTML = ''; addMilestoneRow(); }
+    nb.textContent = '+ New Goal';
+  });
+
   const m = document.getElementById('confirmModal'); if (m) {
     const cm = document.getElementById('cancelModal'), df = document.getElementById('confirmDelete');
     if (cm) cm.addEventListener('click', closeModal);

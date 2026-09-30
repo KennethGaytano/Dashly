@@ -26,6 +26,9 @@ let editingTaskId = null;
 // Element focused before the modal opened, restored on close
 let modalOpener = null;
 
+// The add/edit form, revealed by the "+ Add Task" button. Assigned in init.
+let taskFormDisclosure = null;
+
 /**
  * Generate unique ID for tasks
  */
@@ -35,11 +38,28 @@ function generateId() {
 
 /**
  * Get all tasks from localStorage
+ *
+ * The stored value is whatever a previous version of the app, a hand edit in
+ * devtools, or a partial write left behind, so the shape is verified here
+ * rather than assumed. Both checks below were real crashes: an object or a
+ * string instead of an array made renderTasks call .filter on a non-array, and
+ * a null inside the array made the status grouping read .status of null. Both
+ * threw an uncaught TypeError and left the page with no task list at all.
  */
 function getTasks() {
   try {
     const tasks = localStorage.getItem(STORAGE_KEY);
-    return tasks ? JSON.parse(tasks) : [];
+    if (!tasks) return [];
+
+    const parsed = JSON.parse(tasks);
+    if (!Array.isArray(parsed)) {
+      console.error('Stored tasks are not an array; ignoring them.');
+      return [];
+    }
+
+    // Drop anything that is not an object with an id, rather than letting it
+    // reach the render loop.
+    return parsed.filter(t => t && typeof t === 'object' && t.id);
   } catch (error) {
     console.error('Error loading tasks:', error);
     return [];
@@ -195,12 +215,15 @@ function taskLinkHtml(task) {
 function renderTasks() {
   const tasks = getTasks();
 
-  // Group tasks by status
-  const todoTasks = tasks.filter(t => t.status === TaskStatus.TODO);
+  // Group by status. A task whose status is missing or unrecognised used to
+  // match none of the three filters and simply disappeared from the page,
+  // which reads as data loss. Unknown statuses now fall into To Do; the three
+  // known ones keep their own lists, so nothing is duplicated.
+  const KNOWN = [TaskStatus.TODO, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED];
+  const todoTasks = tasks.filter(t => t.status === TaskStatus.TODO || !KNOWN.includes(t.status));
   const inProgressTasks = tasks.filter(t => t.status === TaskStatus.IN_PROGRESS);
   const completedTasks = tasks.filter(t => t.status === TaskStatus.COMPLETED);
 
-  // Render each section
   renderTaskSection('todoList', todoTasks, 'No tasks to do');
   renderTaskSection('inProgressList', inProgressTasks, 'No tasks in progress');
   renderTaskSection('completedList', completedTasks, 'No completed tasks');
@@ -400,6 +423,12 @@ function handleFormSubmit(event) {
     form.reset();
     syncDueTimeAvailability();
     renderTasks();
+    // A successful add closes the form too; cancelEdit() already closed it on
+    // the edit path, so this only bites here.
+    if (!editingTaskId && taskFormDisclosure) {
+      taskFormDisclosure.close();
+      taskFormDisclosure.trigger.textContent = '+ Add Task';
+    }
   }
 }
 
@@ -432,14 +461,12 @@ function startEditTask(taskId) {
   document.getElementById('formTitle').textContent = 'Edit Task';
   document.getElementById('submitBtn').textContent = 'Update Task';
 
-  // Show cancel button
-  const cancelBtn = document.getElementById('cancelBtn');
-  if (cancelBtn) {
-    cancelBtn.style.display = 'inline-flex';
+  // Editing an existing task reveals the form, exactly as the Add button does.
+  // No scrollIntoView here: open() handles that and honours reduced motion.
+  if (taskFormDisclosure) {
+    taskFormDisclosure.open({ focus: false });
+    taskFormDisclosure.trigger.textContent = '✎ Editing…';
   }
-
-  // Scroll to form
-  document.getElementById('taskForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /**
@@ -454,10 +481,12 @@ function cancelEdit() {
   document.getElementById('formTitle').textContent = 'Add a Task';
   document.getElementById('submitBtn').textContent = '+ Add Task';
 
-  // Hide cancel button
-  const cancelBtn = document.getElementById('cancelBtn');
-  if (cancelBtn) {
-    cancelBtn.style.display = 'none';
+  // Cancel is not hidden here. The form is a disclosure now, so it is open and
+  // the user may have typed something they want to discard. It collapses the
+  // panel, which is what removes Cancel from view anyway.
+  if (taskFormDisclosure) {
+    taskFormDisclosure.close();
+    taskFormDisclosure.trigger.textContent = '+ Add Task';
   }
 }
 
@@ -592,6 +621,16 @@ function showMessage(message, type = 'info') {
  * Initialize the task management system
  */
 function initTaskManager() {
+  // The form starts collapsed. Everything below assumes the disclosure exists
+  // before any edit or cancel can run.
+  taskFormDisclosure = window.FormDisclosure
+    ? window.FormDisclosure.attach(
+        document.getElementById('newTaskBtn'),
+        document.getElementById('taskFormPanel'),
+        { focusTarget: '#taskTitle' }
+      )
+    : null;
+
   // Render initial tasks
   renderTasks();
 
@@ -608,11 +647,10 @@ function initTaskManager() {
     }
   }
 
-  // Set up cancel button
+  // Cancel stays visible in both modes. See the note in cancelEdit().
   const cancelBtn = document.getElementById('cancelBtn');
   if (cancelBtn) {
     cancelBtn.addEventListener('click', cancelEdit);
-    cancelBtn.style.display = 'none'; // Hidden by default
   }
 
   // Set up modal close handlers

@@ -54,7 +54,17 @@
         </header>
 
         <section>
-            <h2 id="formTitle">New Note</h2>
+            <div class="section-header">
+                <h2 id="formTitle">New Note</h2>
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="newNoteBtn"
+                    aria-expanded="false"
+                    aria-controls="noteFormPanel"
+                >+ New Note</button>
+            </div>
+            <div id="noteFormPanel" hidden>
             <div class="card">
                 <form id="noteForm" class="note-form">
                     <div class="form-group">
@@ -109,9 +119,10 @@
                     </div>
                     <div class="note-form-actions">
                         <button type="submit" id="submitBtn" class="btn btn-primary"><span aria-hidden="true">💾</span> Save</button>
-                        <button type="button" id="cancelBtn" class="btn btn-secondary" style="display:none"><span aria-hidden="true">✖</span> Cancel</button>
+                        <button type="button" id="cancelBtn" class="btn btn-secondary"><span aria-hidden="true">✖</span> Cancel</button>
                     </div>
                 </form>
+            </div>
             </div>
         </section>
 
@@ -163,5 +174,6 @@
 
     <script src="../scripts/link-utils.js"></script>
     <script src="../scripts/nav.js"></script>
+    <script src="../scripts/form-disclosure.js"></script>
     <script src="../scripts/notes.js"></script>
 </html>

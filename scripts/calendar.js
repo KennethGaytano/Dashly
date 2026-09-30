@@ -115,23 +115,6 @@
     render();
   }
 
-  function selectDate(event) {
-    const button = event.target.closest('.calendar-day');
-    if (!button) return;
-
-    const grid = document.getElementById('calendarGrid');
-    if (!grid) return;
-
-    // Basic visual selection; wire to real navigation later
-    grid.querySelectorAll('.calendar-day.selected').forEach(el => {
-      el.classList.remove('selected');
-      el.removeAttribute('aria-pressed');
-    });
-
-    button.classList.add('selected');
-    button.setAttribute('aria-pressed', 'true');
-  }
-
   function init() {
     const now = new Date();
     viewYear = now.getFullYear();
@@ -139,11 +122,17 @@
 
     const prev = document.getElementById('prevMonth');
     const next = document.getElementById('nextMonth');
-    const grid = document.getElementById('calendarGrid');
 
     if (prev) prev.addEventListener('click', () => shiftMonth(-1));
     if (next) next.addEventListener('click', () => shiftMonth(1));
-    if (grid) grid.addEventListener('click', selectDate);
+
+    // Day selection is deliberately NOT handled here. calendar-events.js owns
+    // it, because selecting a day has to update the form, the day list and the
+    // event dots together. This file used to run a second click handler that
+    // only toggled a class, and the two competed over the same attribute:
+    // each stripped .selected before the other could clear its ARIA state, so
+    // aria-selected piled up on every previously selected day and the grid
+    // accumulated several "selected" days as far as a screen reader was told.
 
     render();
   }
