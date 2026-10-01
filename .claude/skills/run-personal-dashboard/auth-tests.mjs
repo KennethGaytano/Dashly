@@ -91,8 +91,8 @@ try {
   await page.getByRole('heading', { name: 'Check your email' }).waitFor();
   assert.equal(
     await page.evaluate(() => localStorage.getItem('__auth_test_redirect')),
-    `http://localhost:${port}/index.html`,
-    'email confirmation should return to Home'
+    'https://dashly-personal-dashboard.netlify.app/index.html',
+    'email confirmation should return to the production Home page, even when signup starts locally'
   );
 
   const signupLink = await page.locator('.cloud-inbox-link').evaluate(anchor => ({

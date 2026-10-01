@@ -11,6 +11,7 @@
     pomodoro_sessions: 'dashboard_pomodoro_sessions',
     pomodoro_state: 'pomodoro_state'
   };
+  const PRODUCTION_SITE_URL = 'https://dashly-personal-dashboard.netlify.app/';
   const USER_MARKER = 'dashly_cloud_user_id';
   const PENDING_KEY = 'dashly_cloud_pending_writes';
   const originalGetItem = Storage.prototype.getItem;
@@ -137,6 +138,10 @@
     return new URL(homePath, location.href).href;
   }
 
+  function getEmailConfirmationUrl() {
+    return new URL('index.html', PRODUCTION_SITE_URL).href;
+  }
+
   async function finishSignIn(user) {
     await connectUser(user);
     const homeUrl = getHomeUrl();
@@ -151,7 +156,7 @@
     showAuth('', true);
     try {
       const result = mode === 'signup'
-        ? await client.auth.signUp({ email, password, options: { emailRedirectTo: getHomeUrl() } })
+        ? await client.auth.signUp({ email, password, options: { emailRedirectTo: getEmailConfirmationUrl() } })
         : await client.auth.signInWithPassword({ email, password });
       if (result.error) throw result.error;
       if (mode === 'signup' && !result.data.session) {

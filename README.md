@@ -45,23 +45,20 @@ Pomodoro timer.
 - **Goals** — full CRUD with a milestone checklist. Ticking a milestone
   recalculates overall progress, and edit and delete run through a focus-trapped
   confirmation modal. A goal counts as Completed three ways — every milestone
-  ticked, **Completed** chosen in the status dropdown, or progress set to 100
-  with no milestones — and all three are reflected in the status badge and in the
-  Progress page's Completed filter. Un-completing reverts a goal to Active, and
-  a paused goal stays paused.
-  - A read-only **Goals Progress** view on the Progress page lists every goal
-    with All / Active / Paused / Completed filters and an average-progress
-    summary. Status is re-derived from progress and milestones on read, so goals
-    saved before this behaviour existed still show under the right filter.
+  ticked, **Completed** in the status dropdown, or progress at 100 with no
+  milestones — and all three are reflected in the status badge and the Progress
+  page's Completed filter. Status is re-derived from progress and milestones on
+  read.
+  - A read-only **Goals Progress** view on the Progress page lists every goal with
+    All / Active / Paused / Completed filters and an average-progress summary.
 - **Progress** — weekly stats over a rolling seven-day window (tasks done, hours
-  studied, pomodoros, day streak), computed from real task and focus-session
-  data rather than hardcoded numbers, plus **Skills & Learning** and **Project
-  Completion** add/delete lists. Progress moves along a fixed eight-step ladder —
-  `0, 25, 50, 60, 70, 80, 90, 100` — using steppers with a "Step N of 8"
-  readout, and snaps to the nearest rung at display time.
+  studied, pomodoros, day streak), computed from real data, plus **Skills &
+  Learning** and **Project Completion** add/delete lists. Progress moves along a
+  fixed eight-step ladder — `0, 25, 50, 60, 70, 80, 90, 100` — with a "Step N of
+  8" readout.
 - **Light and dark themes** — a toggle in the sidebar and app bar switches
-  appearance and remembers the choice. The setting is applied before first paint
-  so the page never flashes the wrong theme.
+  appearance and remembers the choice, applied before first paint so the page
+  never flashes the wrong theme.
 
 > **Known gap:** the delete-confirmation modal on the Progress page is present in
 > the markup but not wired up — deleting a track takes effect immediately.
@@ -76,52 +73,51 @@ restricts every account to its own records. A `localStorage` cache keeps the
 synchronous page modules responsive, while writes are persisted to Supabase and
 realtime updates refresh your other devices.
 
+### Email confirmation URL
+
+New confirmation emails always return to the production Home page at
+`https://dashly-personal-dashboard.netlify.app/index.html`, including when
+signup starts from a local development server. In Supabase, set the **Site URL**
+to `https://dashly-personal-dashboard.netlify.app` and add
+`https://dashly-personal-dashboard.netlify.app/**` to **Authentication → URL
+Configuration → Redirect URLs**. Deploy this app update and request a fresh
+confirmation email; existing emails keep their original redirect URL.
+
 ## Design and accessibility
 
 - **Theming from tokens** — every colour, radius, and shadow is a CSS custom
-  property in `base.css`, with the light theme as a second token block under
-  `:root[data-theme="light"]`. One file owns the palette.
-- **Theme applied before first paint** — `theme.js` reads the saved preference in
-  a blocking script in `<head>`, so there is no flash of the wrong appearance.
-- **Staggered page-load reveal** — navigation is a full document load, so rather
-  than a blank flash each page fades and rises into place, 50ms apart, 0.25s per
-  block. Defined once in `layout.css`.
-- **`prefers-reduced-motion` honoured globally** — a single rule in `base.css`
-  collapses every animation and transition to 0.01ms. No per-feature opt-out.
+  property in `base.css`, with the light theme as a second block under
+  `:root[data-theme="light"]`.
+- **Staggered page-load reveal** — pages fade and rise into place, 50ms apart.
+  Defined once in `layout.css`.
+- **`prefers-reduced-motion` honoured globally** — one rule in `base.css`
+  collapses every animation and transition to 0.01ms.
 - **Keyboard support** — a skip link on every page, visible focus rings, focus
   trapping in the mobile nav drawer and the Goals delete modal, `Escape` to
   dismiss, and focus returned to the trigger on close.
 - **Semantics** — the active nav item carries `aria-current="page"`, toasts are
   `role="alert" aria-live="polite"`, and all dynamically rendered text is
   HTML-escaped before insertion.
-- **Custom scrollbar** tinted to the accent colour throughout.
 
 ## Mobile
 
-Below 768px the sidebar becomes an off-canvas drawer and the app gains two pieces
-of persistent chrome.
+Below 768px the sidebar becomes an off-canvas drawer, with two pieces of
+persistent chrome.
 
-- **App bar** — a sticky header naming the current page, replacing a floating
-  hamburger and the 4.5rem of padding that existed only to clear it.
+- **App bar** — a sticky header naming the current page.
 - **Tab bar** — five destinations at thumb height: Home, Tasks, Calendar, Notes,
-  and More. Progress and Goals are deliberately not tabs: six across 390px is
-  about 65px each, which truncates every label, so both sit behind **More**,
-  which opens the existing drawer. On those two pages the **More** tab carries
+  and More. Progress and Goals sit behind **More**, since six across 390px
+  truncates every label. On those two pages the **More** tab carries
   `aria-current="page"`.
-- **Only one control opens the drawer.** Two buttons for one panel was
-  redundant, so the hamburger is gone; `nav.js` wires the More tab to the same
-  open/close path, keeping the focus trap, `Escape` handling, and focus
-  restoration.
+- **Only one control opens the drawer.** `nav.js` wires the More tab to the same
+  open/close path as the drawer, keeping the focus trap, `Escape` handling, and
+  focus restoration.
 - **Notch and home-indicator insets** are honoured via `env(safe-area-inset-*)`,
   which requires `viewport-fit=cover` in the viewport meta tag on every page.
-  Both reads resolve to `0` elsewhere, so the maths stays valid everywhere.
 - **`100dvh`, not `100vh`**, so the drawer tracks the shrinking viewport as a
   mobile browser's URL bar slides away.
-- **Modals become bottom sheets**, anchored to the bottom edge with full-width
-  stacked actions, because a centred dialog on a phone puts its buttons under
-  the thumb.
-- **Compact stat cards** below 480px, where four full-width cards pushed real
-  content off the screen.
+- **Modals become bottom sheets** with full-width stacked actions, because a
+  centred dialog on a phone puts its buttons under the thumb.
 - **Touch targets** are held to 44px. Where the design is deliberately smaller —
   the 24px task checkbox, the 24px note colour swatch — a transparent overlay
   widens the tappable area without changing what is drawn.
@@ -130,30 +126,25 @@ of persistent chrome.
 
 ## Forms are hidden until you ask
 
-Opening a page shows the content, not a wall of input panels. All six add/edit forms start collapsed behind a button and open on click, on desktop and mobile alike.
+All six add/edit forms start collapsed behind a button and open on click, on
+desktop and mobile alike.
 
 - **One button per form** — Tasks `+ Add Task`, Calendar `+ Add event`, Notes
   `+ New Note`, Goals `+ New Goal`, Progress `+ Add Track`, home `+ Quick Note`.
   Each is a real `<button>` with `aria-expanded` and `aria-controls`, and each
-  toggles — a second click puts the form away again.
+  toggles.
 - **Editing opens the form for you.** The pencil button on a task, event, note,
   or goal reveals the same panel, already filled in, with the heading and submit
   button switched to their edit wording.
 - **Escape closes it**, as do Cancel and saving, and focus returns to the button
-  that opened it.
-- **Cancel is visible whenever the form is.** The other five forms used to hide
-  Cancel until you started *editing*, which was correct while forms sat
-  permanently on the page and wrong once they became disclosures — opening a form
-  to add something left no way to back out. Collapsing the panel is now what takes
-  Cancel away.
+  that opened it. Cancel is visible whenever the form is; collapsing the panel is
+  what takes it away.
 - **The panels use the `hidden` attribute**, not a CSS rule, so a collapsed form
-  is genuinely out of the tab order and the accessibility tree rather than merely
-  looking invisible.
+  is genuinely out of the tab order and the accessibility tree.
 - **The shared behaviour lives in `form-disclosure.js`.** Each page supplies only
-  the trigger and the panel, so all six behave identically and one fix lands
-  everywhere.
-- **The calendar deliberately does not open the form when you pick a day**,
-  because opening a calendar should not summon an input panel.
+  the trigger and the panel, so all six behave identically.
+- **The calendar does not open the form when you pick a day**, because opening a
+  calendar should not summon an input panel.
 
 ## Data model
 
@@ -234,15 +225,12 @@ node width-sweep.mjs              # 16 widths with hostile content
 node layout-chain.mjs 320         # names whatever forces a horizontal scroll
 ```
 
-`mobile-audit.mjs` reports horizontal overflow, interactive targets under 44px,
-and form controls under 16px (which make iOS zoom the viewport on focus). It seeds
-`localStorage` first, so it exercises content views rather than only empty states.
+`mobile-audit.mjs` reports horizontal overflow, interactive targets under 44px, and
+form controls under 16px (which make iOS zoom the viewport on focus).
 
-`width-sweep.mjs` seeds one long unbroken URL, because people paste URLs into
-titles and a single token with no break opportunity is what actually breaks
-layout. `layout-chain.mjs` exists because overflow is hard to attribute by eye: it
-hides one element at a time and watches `window.innerWidth`, which names the
-origin directly.
+`width-sweep.mjs` seeds one long unbroken URL, since pasted URLs have no break
+opportunity. `layout-chain.mjs` hides one element at a time and watches
+`window.innerWidth`, which names the cause of an overflow directly.
 
 ### Interactive driver
 
@@ -264,6 +252,4 @@ node scan-encoding.mjs     # flags replacement chars and mojibake in any product
 node disclosure-shots.mjs  # closed vs open form screenshots
 ```
 
-Run `scan-encoding.mjs` after any bulk edit, and prefer writing shared markup into
-a file or generating it from a template — see the gotchas in
-`.claude/skills/run-personal-dashboard/SKILL.md` for why that matters here.
+Run `scan-encoding.mjs` after any bulk edit.

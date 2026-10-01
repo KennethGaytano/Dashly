@@ -10,12 +10,18 @@ coverage/
 build/
 dist/
 
-# Environment variables
+# Environment variables — real secrets live here, never in git
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets.json
+
+# Supabase: local overrides of the project URL and key (the committed
+# supabase-config.js holds only a publishable key, which is safe to expose)
+supabase-config.local.js
 
 # Debug logs
 npm-debug.log*
