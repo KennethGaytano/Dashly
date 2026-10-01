@@ -69,7 +69,7 @@
 }
 
 .badge-active {
-    background: rgba(124, 92, 252, 0.15);
+    background: var(--accent-subtle);
     color: var(--accent-light);
 }
 

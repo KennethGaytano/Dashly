@@ -40,3 +40,6 @@ Desktop.ini
 
 # Screenshots from testing (optional - remove if you want to commit screenshots)
 .claude/skills/run-personal-dashboard/screenshots/
+
+# Unexpanded env vars that created stray Windows cache folders
+%SystemDrive%/

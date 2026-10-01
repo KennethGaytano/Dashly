@@ -17,6 +17,9 @@
   let sessionElapsedMs = 0;
   let sessionSegmentStartedAt = null;
   let sessionLogged = false;
+  let completionMode = null;
+  const completionAudio = new Audio('assets/audio/pomodoro-alarm.wav');
+  completionAudio.preload = 'auto';
 
   function saveSessions(sessions) {
     try {
@@ -85,6 +88,47 @@
     if (status) status.textContent = message;
   }
 
+  function unlockCompletionAudio() {
+    completionAudio.volume = 0;
+    completionAudio.play()
+      .then(() => {
+        completionAudio.pause();
+        completionAudio.currentTime = 0;
+        completionAudio.volume = 1;
+      })
+      .catch(error => {
+        completionAudio.volume = 1;
+        console.warn('Pomodoro notification sound could not be unlocked.', error);
+      });
+  }
+
+  function playCompletionSound() {
+    completionMode = mode;
+    const stopButton = document.getElementById('stopPomodoroAlarm');
+    if (stopButton) stopButton.hidden = false;
+    completionAudio.loop = true;
+    completionAudio.currentTime = 0;
+    completionAudio.volume = 1;
+    completionAudio.play().catch(error => {
+      console.error('Pomodoro completion sound could not play:', error);
+      completionAudio.loop = false;
+      if (stopButton) stopButton.hidden = true;
+      announce('Timer complete. The notification sound could not be played.');
+    });
+  }
+
+  function stopCompletionSound() {
+    completionAudio.pause();
+    completionAudio.currentTime = 0;
+    completionAudio.loop = false;
+    const stopButton = document.getElementById('stopPomodoroAlarm');
+    if (stopButton) stopButton.hidden = true;
+    const switchToBreak = completionMode === 'focus';
+    completionMode = null;
+    if (switchToBreak) switchMode('break');
+    else announce('Alarm stopped.');
+  }
+
   function formatTime(seconds) {
     const minutes = Math.floor(seconds / 60).toString().padStart(2, '0');
     const remainder = (seconds % 60).toString().padStart(2, '0');
@@ -149,6 +193,7 @@
     announce(mode === 'focus'
       ? 'Focus session complete. Take a break when you are ready.'
       : 'Break complete. Ready to focus again?');
+    playCompletionSound();
   }
 
   function tick() {
@@ -163,6 +208,7 @@
 
   function startTimer() {
     if (isRunning) return;
+    unlockCompletionAudio();
     if (remaining === 0) remaining = getDuration();
 
     const now = Date.now();
@@ -330,6 +376,9 @@
     const resetButton = document.querySelector('.timer-buttons button:last-child');
     if (resetButton) resetButton.addEventListener('click', resetTimer);
 
+    const stopAlarmButton = document.getElementById('stopPomodoroAlarm');
+    if (stopAlarmButton) stopAlarmButton.addEventListener('click', stopCompletionSound);
+
     const applyButton = document.getElementById('setDurationBtn');
     if (applyButton) applyButton.addEventListener('click', applyModeDuration);
 
@@ -355,6 +404,36 @@
     }
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  window.addEventListener('dashly:remote-update', event => {
+    if (event.detail && event.detail.collection === 'pomodoro_state') {
+      const updatedState = getState();
+      if (!updatedState) return;
+      if (timerInterval) clearInterval(timerInterval);
+      mode = updatedState.mode === 'break' ? 'break' : 'focus';
+      configuredFocusDuration = Number.isInteger(updatedState.configuredFocusDuration) &&
+        updatedState.configuredFocusDuration >= 60 && updatedState.configuredFocusDuration <= 7200
+        ? updatedState.configuredFocusDuration : DEFAULTS.focus;
+      configuredBreakDuration = Number.isInteger(updatedState.configuredBreakDuration) &&
+        updatedState.configuredBreakDuration >= 60 && updatedState.configuredBreakDuration <= 7200
+        ? updatedState.configuredBreakDuration : DEFAULTS.break;
+      remaining = Number.isFinite(updatedState.remaining)
+        ? Math.max(0, Math.min(updatedState.remaining, getDuration())) : getDuration();
+      isRunning = updatedState.isRunning === true && remaining > 0;
+      deadlineAt = Number.isFinite(updatedState.deadlineAt) ? updatedState.deadlineAt : null;
+      sessionStartedAt = Number.isFinite(updatedState.sessionStartedAt) ? updatedState.sessionStartedAt : null;
+      sessionElapsedMs = Number.isFinite(updatedState.sessionElapsedMs) ? updatedState.sessionElapsedMs : 0;
+      sessionSegmentStartedAt = Number.isFinite(updatedState.sessionSegmentStartedAt)
+        ? updatedState.sessionSegmentStartedAt : null;
+      sessionLogged = false;
+      updateRemainingFromClock();
+      updateDisplay();
+      if (isRunning) {
+        if (remaining === 0) finishTimer();
+        else timerInterval = setInterval(tick, 1000);
+      }
+    }
+  });
+  if (window.DashlyCloud) window.DashlyCloud.start(init);
+  else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();

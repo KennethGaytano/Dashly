@@ -151,9 +151,11 @@ Personal_DashBoard/
 │   ├── notes.html       # Notes page
 │   ├── progress.html    # Progress tracking
 │   └── goals.html       # Goals page
+├── assets/
+│   └── brand/           # Dashly logo and favicon
 ├── scripts/             # Browser JavaScript
 │   ├── home.js          # Home page task summary
-│   └── nav.js           # Mobile drawer, tab bar, focus management
+│   └── nav.js            # Mobile drawer, tab bar, focus management
 ├── styles/
 │   ├── base.css         # Reset, design tokens, a11y utilities
 │   ├── layout.css       # Sidebar, app bar, tab bar, page scaffolding
@@ -164,11 +166,13 @@ Personal_DashBoard/
 │   ├── notes.css        # Note cards and composer
 │   ├── progress.css     # Progress bars
 │   └── goals.css        # Goal cards, badges, milestones
+├── supabase/            # Database schema and access policies
 └── .claude/skills/run-personal-dashboard/
     ├── SKILL.md            # This file
     ├── server.mjs          # HTTP server for serving static files
     ├── driver.mjs          # Interactive Playwright driver
     ├── smoke.mjs           # Cross-page smoke test
+    ├── auth-tests.mjs      # Sign-up email confirmation and inbox link tests
     ├── task-tests.mjs      # Task management test suite
     ├── goals-tests.mjs     # Goals test suite
     ├── notes-tests.mjs     # Notes search, read view, edit, and empty-state tests
@@ -368,6 +372,7 @@ console.log('Checkbox persisted:', isChecked);
 ## Summary
 
 - **Smoke test:** `cd .claude/skills/run-personal-dashboard && node smoke.mjs`
+- **Auth confirmation:** `node auth-tests.mjs`
 - **Behaviour suites:** `node task-tests.mjs`, `node goals-tests.mjs`, `node notes-tests.mjs`, `node progress-tests.mjs`, `node calendar-tests.mjs` — run one at a time, they all bind port 3000
 - **Collapsed forms:** `node form-disclosure-tests.mjs` — the open/close contract across all six pages
 - **Disclosure screenshots:** `node disclosure-shots.mjs` — closed vs open form at 390px and 1280px

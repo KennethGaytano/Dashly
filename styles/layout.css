@@ -26,9 +26,13 @@ aside {
 }
 
 .sidebar-logo h2 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--accent-light);
+    line-height: 0;
+}
+
+.brand-logo {
+    display: block;
+    width: min(100%, 9rem);
+    height: auto;
 }
 
 .sidebar-nav {
@@ -70,6 +74,46 @@ aside {
     flex-shrink: 0;
 }
 
+.theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: background-color var(--transition), color var(--transition),
+        border-color var(--transition);
+}
+
+.theme-toggle:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+
+.theme-toggle-icon {
+    color: var(--accent-light);
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.theme-toggle--sidebar {
+    align-self: stretch;
+    margin: 0.75rem 1.25rem 0.75rem;
+}
+
+.theme-toggle--mobile {
+    display: none;
+    flex: 0 0 auto;
+    margin-left: auto;
+}
+
 /* ===== Mobile App Bar =====
    Sticky page identity. Replaces the old floating hamburger button and the
    4.5rem of main padding that existed only to leave room for it. Desktop
@@ -93,9 +137,10 @@ aside {
     margin-bottom: 0;
 }
 
-.app-bar-mark {
-    font-size: 1.1rem;
-    line-height: 1;
+.app-bar-logo {
+    display: block;
+    width: 5.75rem;
+    height: auto;
     flex-shrink: 0;
 }
 
@@ -349,6 +394,14 @@ section > h2 {
 @media (max-width: 768px) {
     .app-bar {
         display: flex;
+    }
+
+    .theme-toggle--sidebar {
+        display: none;
+    }
+
+    .theme-toggle--mobile {
+        display: inline-flex;
     }
 
     .tab-bar {

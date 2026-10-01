@@ -12,7 +12,7 @@ https://kennethgaytano.github.io/Personal-Dashboard/
 
 - **Tasks** — full CRUD with due dates/times, three priorities, a description, and To Do / In Progress / Completed columns. Open tasks past their due moment show an overdue warning, and tasks can carry optional links.
 - **Today's Tasks** — max 3 tasks including completed ones, toggleable in place; the overdue badge updates immediately.
-- **Pomodoro** — start/pause/reset across Focus and Break modes with a custom 1–120 minute input. A focus session is written to `dashboard_pomodoro_sessions` **only when a block actually completes** — pausing early does not log time.
+- **Pomodoro** — start/pause/reset across Focus and Break modes with a custom 1–120 minute input. The `assets/audio/pomodoro-alarm.wav` completion sound repeats until **Stop alarm** is pressed; stopping a completed Focus alarm switches the timer to Break. A focus session is written to `dashboard_pomodoro_sessions` **only when a block actually completes** — pausing early does not log time.
 - **Notes & Quick Notes** — full CRUD with a color picker, edit/delete, a shared store between the two pages, and toast notifications.
 - **Calendar** — full CRUD for events in `dashboard_events`: dot markers on the grid, a selected-day panel, an Upcoming Events grouped list, an edit banner with cancel, focus management, accessible group roles, a responsive form, and HTML escaping.
 - **Goals** — full CRUD in `dashboard_goals` with a milestone checklist. Toggling a milestone recalculates overall progress, and edit/delete run through a focus-trapped confirmation modal. Completing a goal works three ways — ticking every milestone, choosing **Completed** in the status dropdown, or setting progress to 100 with no milestones — and all of them are reflected in the status badge and in the Progress page's Completed filter. Un-completing a goal reverts it to Active, and a paused goal stays paused.
@@ -25,7 +25,35 @@ https://kennethgaytano.github.io/Personal-Dashboard/
 
 ## Tech stack
 
-Static HTML, CSS, and vanilla JavaScript. No framework, no build step, no backend. All data lives in the browser's `localStorage`, so it is per-device and does not sync.
+Static HTML, CSS, and vanilla JavaScript, with Supabase Auth and PostgreSQL for
+signed-in, per-user cloud data. The Supabase publishable key is used in the
+browser; Row Level Security restricts each account to its own records. A local
+`localStorage` cache keeps the existing synchronous page modules responsive,
+while changes are saved to Supabase and realtime updates refresh other devices.
+
+### Supabase setup
+
+1. Create a Supabase project and enable Email auth.
+2. Run `supabase/schema.sql` in the SQL Editor. Re-run it after pulling updates
+   to safely add any new setup, including the Realtime publication entry.
+3. Set the Supabase project's Site URL to the deployed site and add its
+   `Personal-Dashboard/**` path to the allowed redirect URLs for email
+   confirmation.
+4. Set the project URL and public publishable key in
+   `scripts/supabase-config.js`. Never put a secret or service-role key in the
+   website.
+
+The app waits for sign-in and a successful cloud read before showing the
+dashboard. On the first successful sign-in for an account in a browser, its
+legacy local dashboard records are cleared and replaced with the account's
+cloud records; there is no import or merge. If cloud loading fails, local
+records are not cleared.
+
+When email confirmation is required, the sign-up screen offers a direct inbox
+link for common email providers. Users can return to sign in from that screen;
+an “Email not confirmed” sign-in response also returns to the inbox guidance.
+After any successful sign-in, Dashly opens Home. Email confirmation links also
+return to Home, including when sign-up began from another page.
 
 ## Design & accessibility
 
@@ -83,8 +111,10 @@ To reset everything, clear site data for the origin in your browser.
 
 - `index.html` — home page and deployed entry point.
 - `pages/` — one HTML file per feature: `tasks`, `calendar`, `notes`, `progress`, `goals`.
-- `scripts/` — one module per page (`tasks.js`, `calendar.js` + `calendar-events.js`, `notes.js` + `quick-notes.js`, `progress.js`, `goals.js`, `home.js`, `pomodoro.js`), plus the shared `nav.js` and `link-utils.js`.
+- `scripts/` — feature modules plus shared `nav.js`, `link-utils.js`, and `form-disclosure.js`; `cloud.js` and `supabase-config.js` handle authenticated persistence.
 - `styles/` — split stylesheets: `base.css` (design tokens, reset, reduced-motion), `layout.css` (sidebar, app bar, tab bar, page scaffolding, and the page-load reveal), `components.css` (buttons, forms, modal, toast), plus one file per page.
+- `assets/brand/` — Dashly logo assets used by the page chrome and favicon.
+- `supabase/` — database schema and access policies.
 - `.claude/skills/run-personal-dashboard/` — local server, smoke test, and Playwright check scripts (`smoke.mjs`, `task-tests.mjs`, `goals-tests.mjs`, `progress-tests.mjs`, `mobile-audit.mjs`, `mobile-nav-tests.mjs`, `layout-chain.mjs`, plus targeted checks).
 
 ### Running the checks
@@ -108,4 +138,3 @@ node form-disclosure-tests.mjs # collapsed-form contract on all six pages
 `mobile-audit.mjs` reports horizontal overflow, interactive targets under 44px, and form controls under 16px (which make iOS zoom the viewport on focus). It seeds `localStorage` first, so unlike `mobile-shots.mjs` it exercises the content views rather than only empty states.
 
 `layout-chain.mjs` exists because horizontal overflow is hard to attribute by eye. It hides one element at a time and watches `window.innerWidth`, which names the origin directly.
-

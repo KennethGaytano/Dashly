@@ -590,8 +590,10 @@ window.getCalendarEventCounts = function() {
   return counts;
 };
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initEvents);
-} else {
-  initEvents();
-}
+window.addEventListener('dashly:remote-update', event => {
+  if (event.detail && event.detail.collection === 'events') refreshAll();
+});
+
+if (window.DashlyCloud) window.DashlyCloud.start(initEvents);
+else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initEvents);
+else initEvents();

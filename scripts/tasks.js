@@ -810,7 +810,13 @@ function initTaskManager() {
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initTaskManager);
+  window.addEventListener('dashly:remote-update', event => {
+    if (event.detail && event.detail.collection === 'tasks') renderTasks();
+  });
+
+  if (window.DashlyCloud) window.DashlyCloud.start(initTaskManager);
+  else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initTaskManager);
+  else initTaskManager();
 } else {
   initTaskManager();
 }

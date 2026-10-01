@@ -324,6 +324,13 @@
     bindDelegation();
     bindSkillsDelegation();
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  window.addEventListener('dashly:remote-update', function(event) {
+    const collection = event.detail && event.detail.collection;
+    if (collection === 'tasks' || collection === 'pomodoro_sessions') renderStats();
+    if (collection === 'goals') renderGoals();
+    if (collection === 'skills' || collection === 'projects') renderSkills();
+  });
+  if (window.DashlyCloud) window.DashlyCloud.start(init);
+  else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();

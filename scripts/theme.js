@@ -1,0 +1,58 @@
+(function() {
+  'use strict';
+
+  const STORAGE_KEY = 'dashly-theme';
+  const root = document.documentElement;
+
+  function readTheme() {
+    try {
+      return window.localStorage.getItem(STORAGE_KEY) === 'light' ? 'light' : 'dark';
+    } catch (error) {
+      console.error('Unable to read the saved appearance preference.', error);
+      return 'dark';
+    }
+  }
+
+  function updateControls(theme) {
+    const nextTheme = theme === 'light' ? 'dark' : 'light';
+    const icon = nextTheme === 'light' ? '☀' : '☾';
+    const label = nextTheme === 'light' ? 'Light' : 'Dark';
+
+    document.querySelectorAll('.theme-toggle').forEach((button) => {
+      const iconElement = button.querySelector('.theme-toggle-icon');
+      const labelElement = button.querySelector('.theme-toggle-label');
+      if (iconElement) iconElement.textContent = icon;
+      if (labelElement) labelElement.textContent = label;
+      button.setAttribute('aria-label', `Switch to ${nextTheme} mode`);
+    });
+  }
+
+  function setTheme(theme) {
+    root.dataset.theme = theme;
+    updateControls(theme);
+
+    try {
+      window.localStorage.setItem(STORAGE_KEY, theme);
+    } catch (error) {
+      console.error('Unable to save the appearance preference.', error);
+    }
+  }
+
+  const initialTheme = readTheme();
+  root.dataset.theme = initialTheme;
+
+  function init() {
+    updateControls(initialTheme);
+    document.querySelectorAll('.theme-toggle').forEach((button) => {
+      button.addEventListener('click', () => {
+        setTheme(root.dataset.theme === 'light' ? 'dark' : 'light');
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  } else {
+    init();
+  }
+})();

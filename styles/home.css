@@ -117,6 +117,24 @@
     justify-content: center;
 }
 
+.pomodoro .alarm-controls {
+    display: flex;
+    justify-content: center;
+}
+
+.pomodoro .stop-alarm {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+.pomodoro .stop-alarm:hover {
+    background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+.pomodoro .stop-alarm[hidden] {
+    display: none;
+}
+
 .duration-settings {
     margin: 0.25rem auto 0;
     color: var(--text-muted);

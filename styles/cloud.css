@@ -1,0 +1,180 @@
+.cloud-locked body > :not(#cloud-auth-root) {
+    visibility: hidden !important;
+}
+
+.cloud-locked body {
+    overflow: hidden;
+}
+
+#cloud-auth-root {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    overflow-y: auto;
+    background: var(--bg-primary, #0d1117);
+    color: var(--text-primary, #f0f3f6);
+}
+
+.cloud-auth-card {
+    width: min(100%, 25rem);
+    padding: 2rem;
+    border: 1px solid var(--border, #30363d);
+    border-radius: var(--radius-lg, 1rem);
+    background: var(--bg-card, #161b22);
+    box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 35%);
+}
+
+.cloud-auth-logo {
+    display: block;
+    width: 9rem;
+    height: auto;
+    margin: 0 auto 1.5rem;
+}
+
+.cloud-auth-card h1 {
+    margin: 0;
+    text-align: center;
+    font-size: 1.45rem;
+}
+
+.cloud-auth-description {
+    margin: 0.65rem 0 1.5rem;
+    color: var(--text-secondary, #a1aab4);
+    line-height: 1.5;
+    text-align: center;
+}
+
+.cloud-auth-card form {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.cloud-auth-card input {
+    width: 100%;
+    min-height: 2.8rem;
+    padding: 0.65rem 0.75rem;
+    color: inherit;
+    border: 1px solid var(--border, #30363d);
+    border-radius: var(--radius-sm, 0.4rem);
+    background: var(--bg-primary, #0d1117);
+}
+
+.cloud-auth-message {
+    min-height: 1.5em;
+    margin: 0.25rem 0 0;
+    color: var(--text-secondary, #a1aab4);
+    line-height: 1.45;
+}
+
+.cloud-confirmation-icon {
+    display: grid;
+    width: 3.25rem;
+    height: 3.25rem;
+    margin: 0 auto 0.9rem;
+    place-items: center;
+    border: 1px solid var(--border, #30363d);
+    border-radius: 50%;
+    color: var(--accent-light, #b4a0ff);
+    font-size: 1.65rem;
+}
+
+.cloud-confirmation-email {
+    color: var(--text-primary, #f0f3f6);
+    overflow-wrap: anywhere;
+}
+
+.cloud-inbox-link,
+#cloud-back-to-signin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.7rem;
+    text-align: center;
+    text-decoration: none;
+}
+
+.cloud-inbox-link:focus-visible,
+#cloud-back-to-signin:focus-visible {
+    outline: 3px solid var(--accent-light, #b4a0ff);
+    outline-offset: 3px;
+}
+
+.cloud-inbox-help {
+    margin: 0 0 0.8rem;
+    color: var(--text-secondary, #a1aab4);
+    line-height: 1.5;
+    text-align: center;
+}
+
+.cloud-auth-card button {
+    min-height: 2.8rem;
+    width: 100%;
+}
+
+.cloud-account-control {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+    margin: auto 0.75rem 0;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.cloud-account-email {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cloud-signout {
+    flex: 0 0 auto;
+    border: 0;
+    padding: 0.25rem;
+    color: var(--accent-light);
+    background: transparent;
+    cursor: pointer;
+}
+
+.cloud-sync-error {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 2200;
+    max-width: min(32rem, calc(100vw - 2rem));
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--danger, #f85149);
+    border-radius: var(--radius-sm, 0.4rem);
+    background: var(--bg-card, #161b22);
+    color: var(--text-primary, #f0f3f6);
+    box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 30%);
+}
+
+@media (max-width: 767px) {
+    .cloud-account-control {
+        margin: auto 0.75rem 0;
+        padding: 0.5rem;
+        font-size: 0.68rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .cloud-auth-card {
+        padding: 1.25rem;
+    }
+
+    .cloud-auth-logo {
+        margin-bottom: 1rem;
+    }
+
+    .cloud-auth-description {
+        margin-bottom: 1rem;
+    }
+}

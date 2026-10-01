@@ -3,28 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <script>document.documentElement.classList.add('cloud-locked');</script>
+    <script src="../scripts/theme.js"></script>
     <title>Dashboard — Goals</title>
+    <link rel="icon" href="../assets/brand/dashly-logo.svg" type="image/svg+xml">
     <link rel="stylesheet" href="../styles/base.css">
     <link rel="stylesheet" href="../styles/layout.css">
     <link rel="stylesheet" href="../styles/components.css">
     <link rel="stylesheet" href="../styles/goals.css">
     <link rel="stylesheet" href="../styles/progress.css">
     <link rel="stylesheet" href="../styles/tasks.css">
+    <link rel="stylesheet" href="../styles/cloud.css">
 </head>
 <body>
 
     <a href="#main-content" class="skip-link">Skip to main content</a>
 
     <header class="app-bar">
-        <span class="app-bar-mark" aria-hidden="true">📊</span>
+        <img class="app-bar-logo" src="../assets/brand/dashly-logo.svg" alt="">
         <span class="app-bar-title">Goals</span>
+        <button type="button" class="theme-toggle theme-toggle--mobile" aria-label="Switch to light mode">
+            <span class="theme-toggle-icon" aria-hidden="true">☀</span>
+            <span class="theme-toggle-label">Light</span>
+        </button>
     </header>
 
     <button type="button" class="nav-scrim" tabindex="-1" aria-hidden="true"></button>
 
     <aside id="sidebar">
         <div class="sidebar-logo">
-            <h2><span aria-hidden="true">📊</span> Dashboard</h2>
+            <h2><img class="brand-logo" src="../assets/brand/dashly-logo.svg" alt="Dashly"></h2>
         </div>
         <nav class="sidebar-nav" aria-label="Main">
             <a href="../index.html">
@@ -46,6 +54,10 @@
                 <span class="nav-icon" aria-hidden="true">🎯</span> Goals
             </a>
         </nav>
+        <button type="button" class="theme-toggle theme-toggle--sidebar" aria-label="Switch to light mode">
+            <span class="theme-toggle-icon" aria-hidden="true">☀</span>
+            <span class="theme-toggle-label">Light</span>
+        </button>
     </aside>
 
     <main id="main-content">
@@ -162,6 +174,9 @@
     <!-- Toast Notification -->
     <div id="toast" class="toast" role="alert" aria-live="polite"></div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../scripts/supabase-config.js"></script>
+    <script src="../scripts/cloud.js"></script>
     <script src="../scripts/nav.js"></script>
     <script src="../scripts/form-disclosure.js"></script>
     <script src="../scripts/goals.js"></script>

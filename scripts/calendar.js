@@ -151,9 +151,7 @@
     render();
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  if (window.DashlyCloud) window.DashlyCloud.start(init);
+  else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 })();

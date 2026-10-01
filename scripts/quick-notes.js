@@ -186,9 +186,11 @@
     }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  window.addEventListener('dashly:remote-update', event => {
+    if (event.detail && event.detail.collection === 'notes') renderQuickNotes();
+  });
+
+  if (window.DashlyCloud) window.DashlyCloud.start(init);
+  else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 })();

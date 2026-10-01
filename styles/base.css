@@ -8,6 +8,7 @@
 }
 
 :root {
+    color-scheme: dark;
     --bg-primary: #0f111a;
     --bg-secondary: #1a1d2e;
     --bg-card: #232741;
@@ -15,6 +16,7 @@
     --accent: #6a4ce0;
     --accent-hover: #5a3ec9;
     --accent-glow: rgba(124, 92, 252, 0.25);
+    --accent-subtle: rgba(124, 92, 252, 0.15);
     --accent-light: #a78bfa;
     --text-primary: #e2e8f0;
     --text-secondary: #a8b5c9;
@@ -47,6 +49,29 @@
     /* Total height the tab bar occupies, notch included. main reserves this so
        the last card is never trapped underneath it. */
     --tab-bar-total: calc(var(--tab-bar-height) + var(--app-safe-bottom));
+}
+
+:root[data-theme="light"] {
+    color-scheme: light;
+    --bg-primary: #e9eef6;
+    --bg-secondary: #e9edf5;
+    --bg-card: #f7faff;
+    --bg-card-hover: #edf1f8;
+    --accent: #244a78;
+    --accent-hover: #193656;
+    --accent-glow: rgba(36, 74, 120, 0.14);
+    --accent-subtle: rgba(36, 74, 120, 0.12);
+    --accent-light: #244a78;
+    --text-primary: #182235;
+    --text-secondary: #5c687d;
+    --text-muted: #626f83;
+    --border: #d6ddea;
+    --border-strong: #aab5c8;
+    --success: #187653;
+    --warning: #8a5a00;
+    --danger: #b42336;
+    --danger-text: #b42336;
+    --focus-ring: 0 0 0 3px rgba(36, 74, 120, 0.2);
 }
 
 /* Z-index ladder. Every fixed layer names its rung so the mobile app bar and
@@ -115,6 +140,10 @@ select {
     background-position: right 0.75rem center;
     padding-right: 2.5rem;
     cursor: pointer;
+}
+
+:root[data-theme="light"] select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235c687d' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
 }
 
 input:focus, textarea:focus, select:focus {

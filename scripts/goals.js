@@ -337,4 +337,10 @@ function init() {
   }
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { const m = document.getElementById('confirmModal'); if (m && m.style.display !== 'none') closeModal(); return; } trapModalFocus(e); });
 }
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+window.addEventListener('dashly:remote-update', event => {
+  if (event.detail && event.detail.collection === 'goals') renderGoals();
+});
+
+if (window.DashlyCloud) window.DashlyCloud.start(init);
+else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else init();

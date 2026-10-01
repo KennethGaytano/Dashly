@@ -428,7 +428,13 @@ window.openNote = openNote;
 window.clearNoteSearch = clearNoteSearch;
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
+  window.addEventListener('dashly:remote-update', event => {
+    if (event.detail && event.detail.collection === 'notes') renderNotes();
+  });
+
+  if (window.DashlyCloud) window.DashlyCloud.start(init);
+  else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 } else {
   init();
 }

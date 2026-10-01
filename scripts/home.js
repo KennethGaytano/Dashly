@@ -405,10 +405,21 @@
     });
   }
 
-  // Initialize when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  window.addEventListener('dashly:remote-update', event => {
+    const collection = event.detail && event.detail.collection;
+    if (collection === 'tasks') {
+      renderHomeTasks();
+      updateTaskCount();
+      updateStreak();
+    }
+    if (collection === 'projects') updateProjectCount();
+    if (collection === 'pomodoro_sessions') {
+      updateStudyTime();
+      updateStreak();
+    }
+  });
+
+  if (window.DashlyCloud) window.DashlyCloud.start(init);
+  else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 })();
