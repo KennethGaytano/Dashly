@@ -31,30 +31,6 @@ browser; Row Level Security restricts each account to its own records. A local
 `localStorage` cache keeps the existing synchronous page modules responsive,
 while changes are saved to Supabase and realtime updates refresh other devices.
 
-### Supabase setup
-
-1. Create a Supabase project and enable Email auth.
-2. Run `supabase/schema.sql` in the SQL Editor. Re-run it after pulling updates
-   to safely add any new setup, including the Realtime publication entry.
-3. Set the Supabase project's Site URL to the deployed site and add its
-   `Personal-Dashboard/**` path to the allowed redirect URLs for email
-   confirmation.
-4. Set the project URL and public publishable key in
-   `scripts/supabase-config.js`. Never put a secret or service-role key in the
-   website.
-
-The app waits for sign-in and a successful cloud read before showing the
-dashboard. On the first successful sign-in for an account in a browser, its
-legacy local dashboard records are cleared and replaced with the account's
-cloud records; there is no import or merge. If cloud loading fails, local
-records are not cleared.
-
-When email confirmation is required, the sign-up screen offers a direct inbox
-link for common email providers. Users can return to sign in from that screen;
-an “Email not confirmed” sign-in response also returns to the inbox guidance.
-After any successful sign-in, Dashly opens Home. Email confirmation links also
-return to Home, including when sign-up began from another page.
-
 ## Design & accessibility
 
 - **Dark theme** driven entirely by CSS custom properties in `base.css`, so the whole palette is defined in one place rather than sprinkled through the stylesheets.
