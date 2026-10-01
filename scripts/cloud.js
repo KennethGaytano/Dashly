@@ -475,7 +475,9 @@
 
   async function loadUser(user) {
     currentUserId = user.id;
-    showAuth('Loading your synced dashboard…', true);
+    if (originalGetItem.call(localStorage, USER_MARKER) !== user.id) {
+      showAuth('Loading your synced dashboard…', true);
+    }
     try {
       let records = await fetchAllCollections();
       const previousUser = originalGetItem.call(localStorage, USER_MARKER);
@@ -648,7 +650,9 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    showAuth('Connecting to Dashly…', true);
+    if (!originalGetItem.call(localStorage, USER_MARKER)) {
+      showAuth('Connecting to Dashly…', true);
+    }
     boot().catch(error => {
       console.error('Could not initialize Supabase.', error);
       showAuth('Could not connect to Supabase: ' + (error.message || 'check your connection and project settings.'), false);

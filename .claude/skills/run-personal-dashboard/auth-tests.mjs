@@ -44,7 +44,9 @@ window.supabase = {
           select() { return this; },
           eq() { return this; },
           then(resolve, reject) {
-            return Promise.resolve({ data: [], error: null }).then(resolve, reject);
+            const delay = Number(localStorage.getItem('__auth_test_delay') || 0);
+            return new Promise(done => setTimeout(done, delay))
+              .then(() => resolve({ data: [], error: null }), reject);
           }
         };
       },
@@ -141,7 +143,22 @@ try {
   assert.equal(await page.title(), 'Dashboard — Home', 'successful sign-in from a feature page should land on Home');
   assert.equal(await page.locator('#cloud-auth-root').count(), 0, 'authenticated Home should not show the login screen');
 
-  console.log('Auth tests passed: confirmation inbox links, unconfirmed sign-in, remembered email, provider fallback, and Home landing after sign-in.');
+  await page.evaluate(() => localStorage.setItem('__auth_test_delay', '700'));
+  await page.goto(`http://localhost:${port}/pages/tasks.html`);
+  assert.equal(
+    await page.locator('html').evaluate(element => element.classList.contains('cloud-locked')),
+    false,
+    'known signed-in users should not have the page hidden while cloud sync restores'
+  );
+  assert.equal(
+    await page.locator('#cloud-auth-root').count(),
+    0,
+    'known signed-in users should not see the connecting/login overlay during page navigation'
+  );
+  await page.locator('#cloud-account-control').waitFor();
+  await page.evaluate(() => localStorage.removeItem('__auth_test_delay'));
+
+  console.log('Auth tests passed: confirmation inbox links, unconfirmed sign-in, remembered email, provider fallback, Home landing, and no connecting overlay for returning users.');
 } finally {
   if (browser) await browser.close();
   server.kill();
