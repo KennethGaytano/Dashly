@@ -156,28 +156,11 @@
         <section>
             <div class="section-header section-header--stacked">
                 <h2>Quick Notes</h2>
-                <button
-                    type="button"
+                <a
                     class="btn btn-primary"
                     id="newQuickNoteBtn"
-                    aria-expanded="false"
-                    aria-controls="quickNotePanel"
-                >+ Quick Note</button>
-            </div>
-            <div class="card quick-note-composer" id="quickNotePanel" hidden>
-                <form id="quickNoteForm" class="quick-note-form">
-                    <label for="quickNoteTitle" class="visually-hidden">Quick note title</label>
-                    <input
-                        type="text"
-                        id="quickNoteTitle"
-                        name="title"
-                        placeholder="Quick thought…"
-                        required
-                        aria-required="true"
-                    >
-                    <button type="submit" class="btn btn-primary">Save</button>
-                    <button type="button" id="cancelQuickNoteBtn" class="btn btn-secondary">Cancel</button>
-                </form>
+                    href="pages/notes.html?new=1"
+                >+ Quick Note</a>
             </div>
             <div id="quickNotesList" class="notes-grid"></div>
             <div class="section-link-wrap">

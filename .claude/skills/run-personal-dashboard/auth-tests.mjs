@@ -148,7 +148,15 @@ try {
   assert.equal(await page.locator('#cloud-auth-root').count(), 1, 'signing out should return to the password screen');
   assert.equal(await page.locator('#cloud-signin').count(), 1);
 
-  console.log('Auth tests passed: password signup, email-confirmation guidance, invalid-password feedback, sign-in, Home landing, and returning-user navigation.');
+  await page.goto(`http://localhost:${port}/pages/notes.html?new=1`);
+  await page.locator('#cloud-email').fill('person@gmail.com');
+  await page.locator('#cloud-password').fill('password123');
+  await page.locator('#cloud-auth-form').locator('button[type="submit"]').click();
+  await page.locator('#noteFormPanel.is-visible').waitFor();
+  assert.equal(await page.title(), 'Dashboard — Notes', 'sign-in from the Home Quick Note flow should return to Notes');
+  assert.equal(await page.locator('#noteTitle').isVisible(), true, 'sign-in should reveal the requested new note form');
+
+  console.log('Auth tests passed: password signup, email-confirmation guidance, invalid-password feedback, sign-in, Home landing, returning-user navigation, and the new-note return route.');
 } finally {
   if (browser) await browser.close();
   server.kill();

@@ -260,6 +260,12 @@
         font-size: 0.75rem;
         padding: 0.6rem 0.5rem;
     }
+
+    .calendar-day-label {
+        font-size: 0.6rem;
+        letter-spacing: 0;
+        padding-inline: 0;
+    }
 }
 
 .event-item-link {

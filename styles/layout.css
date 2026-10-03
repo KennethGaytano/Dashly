@@ -454,6 +454,7 @@ section > h2 {
         /* The app bar is in flow and supplies its own height, so the old 4.5rem
            of top padding is gone. The bottom padding reserves the tab bar plus
            the home-indicator inset, so the last card is never trapped under it. */
+        width: 100%;
         padding: 1rem 1.25rem calc(var(--tab-bar-total) + 1.5rem);
     }
 

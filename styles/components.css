@@ -252,19 +252,12 @@ html.form-dialog-open body {
 
 @media (max-width: 600px) {
     .form-dialog-panel:not([hidden]) {
-        top: auto;
-        right: 0;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        max-height: calc(100dvh - 2.5rem - var(--app-safe-top));
-        padding-bottom: var(--app-safe-bottom);
-        border-radius: var(--radius) var(--radius) 0 0;
-        transform: translateY(1rem);
-    }
-
-    .form-dialog-panel:not([hidden]).is-visible {
-        transform: translateY(0);
+        top: 50%;
+        left: 50%;
+        width: calc(100vw - 2rem);
+        max-height: calc(100dvh - 2rem - var(--app-safe-top) - var(--app-safe-bottom));
+        border-radius: var(--radius);
+        transform: translate(-50%, -47%) scale(0.985);
     }
 }
 

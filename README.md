@@ -23,8 +23,9 @@ Supabase project's Authentication settings. Existing accounts created through
 the previous email-code flow may need a password set before password sign-in.
 
 The interface is responsive down to 320px: below 768px the sidebar becomes an
-off-canvas drawer with a sticky app bar and a five-destination tab bar, and
-dialogs become bottom sheets. Light and dark themes are driven entirely by CSS
+off-canvas drawer with a sticky app bar and a five-destination tab bar. Form
+dialogs stay centered on phones and scroll internally when they are taller than
+the viewport. Light and dark themes are driven entirely by CSS
 custom properties and applied before first paint, so the page never flashes the
 wrong theme.
 
@@ -40,8 +41,8 @@ wrong theme.
 - **Pomodoro** — start, pause, and reset across Focus and Break modes with a
   custom 1–120 minute length. A session is recorded **only when a block actually
   completes** — pausing early logs no time. Timer state survives a refresh.
-- **Notes** — full CRUD with a colour picker, shared with the Quick Notes panel
-  on the home page.
+- **Notes** — full CRUD with a colour picker. The Home Quick Note shortcut opens
+  the full note form, and recent notes appear on the dashboard.
 - **Calendar** — full CRUD for events with dot markers on the grid, a
   selected-day panel, and an Upcoming Events list grouped by day.
 - **Goals** — full CRUD with a milestone checklist. Ticking a milestone

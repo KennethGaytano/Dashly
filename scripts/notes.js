@@ -418,6 +418,14 @@ function init() {
     if (event.target === event.currentTarget) closeNoteViewer();
   });
   document.addEventListener('keydown', trapModalFocus);
+
+  const params = new URLSearchParams(location.search);
+  if (params.get('new') === '1' && noteFormDisclosure) {
+    noteFormDisclosure.open();
+    params.delete('new');
+    const query = params.toString();
+    history.replaceState(history.state, '', location.pathname + (query ? '?' + query : '') + location.hash);
+  }
 }
 
 window.startEditNote = startEditNote;

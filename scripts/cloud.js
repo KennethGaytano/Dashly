@@ -116,9 +116,12 @@
   }
 
   async function finishSignIn(user) {
+    const params = new URLSearchParams(location.search);
+    const destination = location.pathname.endsWith('/pages/notes.html') && params.get('new') === '1'
+      ? location.href
+      : getHomeUrl();
     await connectUser(user);
-    const homeUrl = getHomeUrl();
-    if (location.href !== homeUrl) location.replace(homeUrl);
+    if (location.href !== destination) location.replace(destination);
   }
 
   async function submitAuth(mode) {

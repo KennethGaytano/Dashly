@@ -4,7 +4,7 @@
  *
  * Every add/edit form on the site starts closed behind a button and opens as
  * an accessible popup when the user asks to add something or clicks Edit.
- * These checks cover that contract once across all six pages rather than
+ * These checks cover that contract across all form pages rather than
  * duplicating it in each page's own suite.
  *
  * Usage: node form-disclosure-tests.mjs
@@ -38,7 +38,6 @@ page.on('pageerror', e => errors.push(e.message));
 
 // page, label, trigger, panel, first field
 const FORMS = [
-  ['index.html',        'Home',     '#newQuickNoteBtn', '#quickNotePanel', '#quickNoteTitle'],
   ['pages/tasks.html',  'Tasks',    '#newTaskBtn',      '#taskFormPanel',   '#taskTitle'],
   ['pages/calendar.html','Calendar', '#newEventBtn',     '#eventFormPanel',  '#eventTitle'],
   ['pages/notes.html',  'Notes',    '#newNoteBtn',      '#noteFormPanel',   '#noteTitle'],
@@ -240,11 +239,7 @@ for (const [url, label, trigger, field, editBtn, record, key] of EDITS) {
 }
 
 console.log('\n--- Every form has a visible Cancel while it is open ---');
-// The home composer was the only form with no Cancel at all, and the other five
-// hid theirs until an edit began -- so opening a form to add something left you
-// with no way to back out short of Escape. Both are fixed; this pins it.
 const CANCELS = [
-  ['index.html',         'Home',     '#newQuickNoteBtn',  '#quickNoteTitle', '#cancelQuickNoteBtn'],
   ['pages/tasks.html',   'Tasks',    '#newTaskBtn',       '#taskTitle',      '#cancelBtn'],
   ['pages/calendar.html','Calendar', '#newEventBtn',      '#eventTitle',     '#cancelEventBtn'],
   ['pages/notes.html',   'Notes',    '#newNoteBtn',       '#noteTitle',      '#cancelBtn'],
@@ -274,22 +269,39 @@ for (const [url, label, trigger, field, cancel] of CANCELS) {
     `${label}: focus returned to the trigger after Cancel`);
 }
 
-console.log('\n--- The home composer round trip ---');
+console.log('\n--- Home Quick Note opens and saves the full Notes form ---');
 {
   await page.goto(`${BASE}/index.html`);
   await page.evaluate(() => localStorage.clear());
   await page.reload();
   await page.waitForTimeout(300);
-  eq((await state()).expanded, 'false', 'Home: the composer starts collapsed');
-
+  eq(await page.locator('#newQuickNoteBtn').getAttribute('href'), 'pages/notes.html?new=1',
+    'Home: Quick Note links to the full note form');
   await page.click('#newQuickNoteBtn');
-  await page.waitForSelector('#quickNoteTitle', { state: 'visible' });
-  await page.fill('#quickNoteTitle', 'A quick thought');
-  await page.click('#quickNoteForm button[type="submit"]');
+  await page.locator('#noteFormPanel.is-visible').waitFor();
+  await page.waitForSelector('#noteTitle', { state: 'visible' });
+  assert(await page.locator('#noteBody').isVisible(), 'Notes: the full note body field is available');
+  assert(await page.locator('#noteUrl').isVisible(), 'Notes: the optional link field is available');
+  eq(await page.locator('#noteFormPanel').getAttribute('role'), 'dialog',
+    'Notes: the full form opens as a dialog');
+  eq(await page.evaluate(() => location.search), '',
+    'Notes: the one-time open-form query is removed after use');
+  await page.fill('#noteTitle', 'A quick thought');
+  await page.fill('#noteBody', 'Captured from the home shortcut.');
+  await page.fill('#noteUrl', 'example.com/quick-thought');
+  await page.click('#noteForm button[type="submit"]');
   await page.waitForTimeout(300);
-  eq((await state()).expanded, 'false', 'Home: saving collapses the composer');
-  assert((await page.textContent('#quickNotesList')).includes('A quick thought'), 'Home: the note appears in the list');
-  // The "View all" link moved below the list, so confirm it was not lost.
+  eq((await state()).expanded, 'false', 'Notes: saving closes the full note form');
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('dashboard_notes') || '[]')
+    .find(note => note.title === 'A quick thought'));
+  assert(!!saved, 'Notes: the full note was saved');
+  eq(saved?.body, 'Captured from the home shortcut.', 'Notes: note body was saved');
+  eq(saved?.url, 'https://example.com/quick-thought', 'Notes: link was normalized and saved');
+
+  await page.goto(`${BASE}/index.html`);
+  await page.waitForFunction(() => document.querySelector('#quickNotesList')?.textContent.includes('A quick thought'));
+  assert((await page.textContent('#quickNotesList')).includes('Captured from the home shortcut.'),
+    'Home: the saved full note appears in Quick Notes');
   assert(await page.locator('.section-link-wrap a[href="pages/notes.html"]').count() === 1,
     'Home: the View all link is still present');
 }
@@ -329,6 +341,40 @@ console.log('\n--- Cancel is hittable at phone width, not buried under the tab b
     }, cancel);
     assert(hit.inViewport, `${label}: Cancel scrolls into view at 390px`);
     assert(hit.reachable, `${label}: a tap on Cancel lands on it, not the tab bar (${hit.topEl})`);
+  }
+  await mob.close();
+}
+
+console.log('\n--- Form popups stay centred on phone screens ---');
+{
+  const mob = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const mp = await mob.newPage();
+  for (const [url, label, trigger, panel] of FORMS) {
+    await mp.goto(`${BASE}/${url}`);
+    await mp.evaluate(() => localStorage.clear());
+    await mp.reload();
+    await mp.waitForTimeout(300);
+    await mp.click(trigger);
+    await mp.locator(`${panel}.is-visible`).waitFor();
+    await mp.waitForFunction(selector => {
+      const element = document.querySelector(selector);
+      return element && getComputedStyle(element).opacity === '1';
+    }, panel);
+
+    const bounds = await mp.locator(panel).boundingBox();
+    assert(!!bounds, `${label}: popup has measurable bounds at phone width`);
+    if (bounds) {
+      const centerX = bounds.x + bounds.width / 2;
+      const centerY = bounds.y + bounds.height / 2;
+      assert(Math.abs(centerX - 195) <= 2, `${label}: popup is horizontally centred`);
+      assert(Math.abs(centerY - 422) <= 2, `${label}: popup is vertically centred`);
+      assert(bounds.x >= 0 && bounds.x + bounds.width <= 390,
+        `${label}: popup stays within the phone viewport width`);
+      assert(bounds.y >= 0 && bounds.y + bounds.height <= 844,
+        `${label}: popup stays within the phone viewport height`);
+    }
+    await mp.locator(panel).locator('.form-dialog-close').click();
+    await mp.waitForTimeout(200);
   }
   await mob.close();
 }
