@@ -14,6 +14,7 @@ const server = spawn('node', [join(directory, 'server.mjs')], {
 const supabaseStub = `
 window.supabase = {
   createClient() {
+    let authStateChange;
     return {
       auth: {
         async getSession() {
@@ -22,21 +23,28 @@ window.supabase = {
             error: null
           };
         },
-        onAuthStateChange() {},
-        async signUp({ options }) {
-          localStorage.setItem('__auth_test_redirect', options.emailRedirectTo);
-          return { data: { session: null }, error: null };
+        onAuthStateChange(callback) {
+          authStateChange = callback;
         },
-        async signInWithPassword({ email }) {
-          if (email === 'confirmed@gmail.com') {
-            const session = { user: { id: 'confirmed-user', email } };
-            localStorage.setItem('__auth_test_session', JSON.stringify(session));
-            return {
-              data: { session },
-              error: null
-            };
+        async signOut() {
+          localStorage.removeItem('__auth_test_session');
+          if (authStateChange) authStateChange('SIGNED_OUT', null);
+          return { error: null };
+        },
+        async signInWithOtp({ email, options }) {
+          localStorage.setItem('__auth_test_otp_request', JSON.stringify({ email, options }));
+          const count = Number(localStorage.getItem('__auth_test_otp_count') || 0) + 1;
+          localStorage.setItem('__auth_test_otp_count', String(count));
+          return { data: { user: null, session: null }, error: null };
+        },
+        async verifyOtp({ email, token, type }) {
+          localStorage.setItem('__auth_test_otp_verify', JSON.stringify({ email, token, type }));
+          if (token !== '123456') {
+            return { data: { session: null }, error: { message: 'Invalid OTP' } };
           }
-          return { data: { session: null }, error: { message: 'Email not confirmed' } };
+          const session = { user: { id: 'otp-user', email } };
+          localStorage.setItem('__auth_test_session', JSON.stringify(session));
+          return { data: { session }, error: null };
         }
       },
       from() {
@@ -85,63 +93,36 @@ try {
   );
   await page.goto(`http://localhost:${port}/pages/tasks.html`);
 
-  await page.locator('#cloud-email').fill('test@gmail.com');
-  await page.locator('#cloud-password').fill('test-password-123');
-  await page.locator('#cloud-signup').click();
-  await page.getByRole('heading', { name: 'Check your email' }).waitFor();
-  assert.equal(
-    await page.evaluate(() => localStorage.getItem('__auth_test_redirect')),
-    'https://dashly-personal-dashboard.netlify.app/index.html',
-    'email confirmation should return to the production Home page, even when signup starts locally'
-  );
+  assert.equal(await page.locator('#cloud-password').count(), 0, 'OTP sign-in should not ask for a password');
+  await page.locator('#cloud-email').fill('person@gmail.com');
+  await page.locator('#cloud-send-code').click();
+  await page.getByRole('heading', { name: 'Enter your code' }).waitFor();
+  const request = await page.evaluate(() => JSON.parse(localStorage.getItem('__auth_test_otp_request')));
+  assert.equal(request.email, 'person@gmail.com');
+  assert.equal(request.options.shouldCreateUser, true, 'OTP sign-in should support new and existing accounts');
+  assert.equal(await page.locator('#cloud-otp').getAttribute('autocomplete'), 'one-time-code');
+  assert.equal(await page.locator('.cloud-inbox-link').count(), 0, 'OTP flow should not direct users to an email link');
 
-  const signupLink = await page.locator('.cloud-inbox-link').evaluate(anchor => ({
-    href: anchor.href,
-    text: anchor.textContent,
-    target: anchor.target,
-    rel: anchor.rel
-  }));
-  assert.equal(signupLink.href, 'https://mail.google.com/');
-  assert.equal(signupLink.text, 'Open Gmail');
-  assert.equal(signupLink.target, '_blank');
-  assert.match(signupLink.rel, /noopener/);
+  await page.locator('#cloud-otp').fill('12x345678');
+  assert.equal(await page.locator('#cloud-otp').inputValue(), '123456', 'OTP input should keep six numeric digits');
+  await page.locator('#cloud-otp').fill('000000');
+  await page.locator('#cloud-verify-code').click();
+  await page.getByText('Invalid OTP').waitFor();
+  assert.equal(await page.locator('#cloud-otp-form').count(), 1, 'invalid OTP should leave the user on the code screen');
 
-  await page.locator('#cloud-back-to-signin').click();
-  assert.equal(await page.locator('#cloud-email').inputValue(), 'test@gmail.com');
-  await page.locator('#cloud-signin').click();
-  await page.getByRole('heading', { name: 'Check your email' }).waitFor();
-  assert.match(await page.locator('.cloud-auth-message').textContent(), /still needs email confirmation/i);
-  assert.equal(await page.locator('.cloud-inbox-link').getAttribute('href'), 'https://mail.google.com/');
+  await page.locator('#cloud-resend-code').click();
+  await page.getByText('A new code was sent. Check your inbox and spam folder.').waitFor();
+  assert.equal(await page.evaluate(() => localStorage.getItem('__auth_test_otp_count')), '2');
 
-  await page.locator('#cloud-back-to-signin').click();
-  const providerCases = [
-    ['person@outlook.com', 'https://outlook.live.com/mail/'],
-    ['person@yahoo.com', 'https://mail.yahoo.com/'],
-    ['person@icloud.com', 'https://www.icloud.com/mail/'],
-    ['person@proton.me', 'https://mail.proton.me/']
-  ];
-  for (const [email, expectedUrl] of providerCases) {
-    await page.locator('#cloud-email').fill(email);
-    await page.locator('#cloud-password').fill('test-password-123');
-    await page.locator('#cloud-signup').click();
-    await page.getByRole('heading', { name: 'Check your email' }).waitFor();
-    assert.equal(await page.locator('.cloud-inbox-link').getAttribute('href'), expectedUrl);
-    await page.locator('#cloud-back-to-signin').click();
-  }
-
-  await page.locator('#cloud-email').fill('person@company.example');
-  await page.locator('#cloud-signup').click();
-  await page.getByRole('heading', { name: 'Check your email' }).waitFor();
-  assert.equal(await page.locator('.cloud-inbox-help').count(), 1);
-  assert.equal(await page.locator('.cloud-inbox-link').count(), 0, 'unknown providers must not receive a guessed link');
-
-  await page.locator('#cloud-back-to-signin').click();
-  await page.locator('#cloud-email').fill('confirmed@gmail.com');
-  await page.locator('#cloud-password').fill('test-password-123');
-  await page.locator('#cloud-signin').click();
+  await page.locator('#cloud-otp').fill('123456');
+  await page.locator('#cloud-verify-code').click();
   await page.waitForURL('**/index.html');
-  assert.equal(await page.title(), 'Dashboard — Home', 'successful sign-in from a feature page should land on Home');
-  assert.equal(await page.locator('#cloud-auth-root').count(), 0, 'authenticated Home should not show the login screen');
+  assert.equal(await page.title(), 'Dashboard — Home', 'successful OTP verification from a feature page should land on Home');
+  assert.equal(await page.locator('#cloud-auth-root').count(), 0, 'successful OTP verification should close the auth screen');
+  const verification = await page.evaluate(() => JSON.parse(localStorage.getItem('__auth_test_otp_verify')));
+  assert.equal(verification.email, 'person@gmail.com');
+  assert.equal(verification.token, '123456');
+  assert.equal(verification.type, 'email');
 
   await page.evaluate(() => localStorage.setItem('__auth_test_delay', '700'));
   await page.goto(`http://localhost:${port}/pages/tasks.html`);
@@ -158,7 +139,12 @@ try {
   await page.locator('#cloud-account-control').waitFor();
   await page.evaluate(() => localStorage.removeItem('__auth_test_delay'));
 
-  console.log('Auth tests passed: confirmation inbox links, unconfirmed sign-in, remembered email, provider fallback, Home landing, and no connecting overlay for returning users.');
+  await page.locator('#cloud-account-control .cloud-signout').click();
+  await page.waitForTimeout(100);
+  assert.equal(await page.locator('#cloud-auth-root').count(), 1, 'signing out should return to the email code screen');
+  assert.equal(await page.locator('#cloud-send-code').count(), 1);
+
+  console.log('Auth tests passed: OTP request, resend, invalid-code feedback, verification, new-account option, Home landing, and returning-user navigation.');
 } finally {
   if (browser) await browser.close();
   server.kill();

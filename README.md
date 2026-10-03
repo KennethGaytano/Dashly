@@ -73,15 +73,23 @@ restricts every account to its own records. A `localStorage` cache keeps the
 synchronous page modules responsive, while writes are persisted to Supabase and
 realtime updates refresh your other devices.
 
-### Email confirmation URL
+### Email-code sign-in
 
-New confirmation emails always return to the production Home page at
-`https://dashly-personal-dashboard.netlify.app/index.html`, including when
-signup starts from a local development server. In Supabase, set the **Site URL**
-to `https://dashly-personal-dashboard.netlify.app` and add
-`https://dashly-personal-dashboard.netlify.app/**` to **Authentication → URL
-Configuration → Redirect URLs**. Deploy this app update and request a fresh
-confirmation email; existing emails keep their original redirect URL.
+Dashly signs in with a six-digit email OTP. Enter an email, request a code, and
+verify it on the same page; new users are created through the same flow. No
+confirmation link or redirect is involved.
+
+In Supabase, open **Authentication → Email Templates → Magic Link** and set the
+email body to include the OTP token, for example:
+
+```html
+<h2>Your Dashly sign-in code</h2>
+<p>Enter this six-digit code in Dashly: <strong>{{ .Token }}</strong></p>
+```
+
+Without `{{ .Token }}`, Supabase may send a link instead of a code. Keep email
+authentication enabled. Email codes are limited by the project's Auth email
+rate limits and resend cooldown.
 
 ## Design and accessibility
 

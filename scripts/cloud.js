@@ -11,7 +11,6 @@
     pomodoro_sessions: 'dashboard_pomodoro_sessions',
     pomodoro_state: 'pomodoro_state'
   };
-  const PRODUCTION_SITE_URL = 'https://dashly-personal-dashboard.netlify.app/';
   const USER_MARKER = 'dashly_cloud_user_id';
   const PENDING_KEY = 'dashly_cloud_pending_writes';
   const originalGetItem = Storage.prototype.getItem;
@@ -45,86 +44,71 @@
       document.body.appendChild(root);
     }
     const section = root.querySelector('.cloud-auth-card');
-    if (!root.querySelector('#cloud-auth-form')) renderAuthForm(section);
+    if (!section.querySelector('#cloud-email-form, #cloud-otp-form')) renderAuthForm(section);
     const messageEl = root.querySelector('#cloud-auth-message');
     if (messageEl && message !== undefined) messageEl.textContent = message;
     root.querySelectorAll('button, input').forEach(control => { control.disabled = !!busy; });
-    const signinButton = root.querySelector('#cloud-signin');
-    if (signinButton) signinButton.textContent = busy ? 'Connecting…' : 'Sign in';
+    const sendButton = root.querySelector('#cloud-send-code');
+    if (sendButton) sendButton.textContent = busy ? 'Connecting…' : 'Send me a code';
+    const verifyButton = root.querySelector('#cloud-verify-code');
+    if (verifyButton) verifyButton.textContent = busy ? 'Connecting…' : 'Verify and sign in';
   }
 
   function renderAuthForm(section, email, message) {
     section.innerHTML = [
       '<img src="' + (location.pathname.includes('/pages/') ? '../assets/brand/dashly-logo.svg' : 'assets/brand/dashly-logo.svg') + '" alt="Dashly" class="cloud-auth-logo">',
-      '<h1 id="cloud-auth-title">Your dashboard, synced</h1>',
-      '<p class="cloud-auth-description">Sign in or create an account to use Dashly on your devices.</p>',
-      '<form id="cloud-auth-form">',
+      '<h1 id="cloud-auth-title">Sign in to Dashly</h1>',
+      '<p class="cloud-auth-description">Enter your email and we’ll send you a one-time code. New accounts can be created with a code too.</p>',
+      '<form id="cloud-email-form">',
       '<label for="cloud-email">Email</label><input id="cloud-email" name="email" type="email" autocomplete="email" required>',
-      '<label for="cloud-password">Password</label><input id="cloud-password" name="password" type="password" autocomplete="current-password" minlength="8" required>',
       '<p id="cloud-auth-message" class="cloud-auth-message" role="status" aria-live="polite"></p>',
-      '<button id="cloud-signin" class="btn btn-primary" type="submit">Sign in</button>',
-      '<button id="cloud-signup" class="btn btn-secondary" type="button">Create account</button>',
+      '<button id="cloud-send-code" class="btn btn-primary" type="submit">Send me a code</button>',
       '</form>'
     ].join('');
-    const form = section.querySelector('#cloud-auth-form');
+    const form = section.querySelector('#cloud-email-form');
     const emailInput = section.querySelector('#cloud-email');
     if (email) emailInput.value = email;
     section.querySelector('#cloud-auth-message').textContent = message || '';
-    section.querySelector('#cloud-signup').addEventListener('click', () => submitAuth('signup'));
     form.addEventListener('submit', event => {
       event.preventDefault();
-      submitAuth('signin');
+      requestEmailCode(emailInput.value.trim(), section);
     });
     if (!email) emailInput.focus();
   }
 
-  function emailProvider(email) {
-    const domain = email.split('@').pop().toLowerCase();
-    const providers = {
-      'gmail.com': { name: 'Gmail', url: 'https://mail.google.com/' },
-      'googlemail.com': { name: 'Gmail', url: 'https://mail.google.com/' },
-      'outlook.com': { name: 'Outlook', url: 'https://outlook.live.com/mail/' },
-      'hotmail.com': { name: 'Outlook', url: 'https://outlook.live.com/mail/' },
-      'live.com': { name: 'Outlook', url: 'https://outlook.live.com/mail/' },
-      'msn.com': { name: 'Outlook', url: 'https://outlook.live.com/mail/' },
-      'yahoo.com': { name: 'Yahoo Mail', url: 'https://mail.yahoo.com/' },
-      'yahoo.co.uk': { name: 'Yahoo Mail', url: 'https://mail.yahoo.com/' },
-      'icloud.com': { name: 'iCloud Mail', url: 'https://www.icloud.com/mail/' },
-      'me.com': { name: 'iCloud Mail', url: 'https://www.icloud.com/mail/' },
-      'mac.com': { name: 'iCloud Mail', url: 'https://www.icloud.com/mail/' },
-      'proton.me': { name: 'Proton Mail', url: 'https://mail.proton.me/' },
-      'protonmail.com': { name: 'Proton Mail', url: 'https://mail.proton.me/' },
-      'aol.com': { name: 'AOL Mail', url: 'https://mail.aol.com/' },
-      'zoho.com': { name: 'Zoho Mail', url: 'https://mail.zoho.com/' }
-    };
-    return providers[domain] || null;
-  }
-
-  function showConfirmation(email, message) {
-    const root = document.getElementById('cloud-auth-root');
-    const section = root && root.querySelector('.cloud-auth-card');
-    if (!section) return;
-    const provider = emailProvider(email);
+  function renderOtpForm(section, email, message, token) {
     section.innerHTML = [
       '<img src="' + (location.pathname.includes('/pages/') ? '../assets/brand/dashly-logo.svg' : 'assets/brand/dashly-logo.svg') + '" alt="Dashly" class="cloud-auth-logo">',
-      '<div class="cloud-confirmation-icon" aria-hidden="true">✉</div>',
-      '<h1 id="cloud-auth-title">Check your email</h1>',
-      '<p class="cloud-auth-description">We sent a confirmation link to <strong class="cloud-confirmation-email"></strong>. Open it to confirm your account, then return here to sign in.</p>',
-      (provider
-        ? '<a class="btn btn-primary cloud-inbox-link" href="' + provider.url + '" target="_blank" rel="noopener noreferrer">Open ' + provider.name + '</a>'
-        : '<p class="cloud-inbox-help">Open your email app or provider and look for the confirmation message from Dashly.</p>'),
-      '<button id="cloud-back-to-signin" class="btn btn-secondary" type="button">Back to sign in</button>',
-      '<p class="cloud-auth-message" role="status" aria-live="polite"></p>'
+      '<div class="cloud-confirmation-icon" aria-hidden="true">#</div>',
+      '<h1 id="cloud-auth-title">Enter your code</h1>',
+      '<p class="cloud-auth-description">We sent a six-digit sign-in code to <strong class="cloud-confirmation-email"></strong>. Enter it here to continue.</p>',
+      '<form id="cloud-otp-form">',
+      '<label for="cloud-otp">Email code</label><input id="cloud-otp" class="cloud-otp-input" name="token" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required>',
+      '<p id="cloud-auth-message" class="cloud-auth-message" role="status" aria-live="polite"></p>',
+      '<button id="cloud-verify-code" class="btn btn-primary" type="submit">Verify and sign in</button>',
+      '<button id="cloud-resend-code" class="btn btn-secondary" type="button">Send a new code</button>',
+      '<button id="cloud-change-email" class="btn btn-secondary" type="button">Use a different email</button>',
+      '</form>'
     ].join('');
     section.querySelector('.cloud-confirmation-email').textContent = email;
-    section.querySelector('.cloud-auth-message').textContent = message ||
-      'If you don’t see the message, check your spam folder.';
-    section.querySelector('#cloud-back-to-signin').addEventListener('click', () => {
-      renderAuthForm(section, email, 'After confirming your email, sign in with your new account.');
+    section.querySelector('#cloud-auth-message').textContent = message || 'Check your inbox and spam folder for the code.';
+    const form = section.querySelector('#cloud-otp-form');
+    const tokenInput = section.querySelector('#cloud-otp');
+    if (token) tokenInput.value = token;
+    tokenInput.addEventListener('input', () => {
+      tokenInput.value = tokenInput.value.replace(/\D/g, '').slice(0, 6);
     });
-    const openInbox = section.querySelector('.cloud-inbox-link');
-    if (openInbox) openInbox.focus();
-    else section.querySelector('#cloud-back-to-signin').focus();
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      verifyEmailCode(email, tokenInput.value.trim(), section);
+    });
+    section.querySelector('#cloud-resend-code').addEventListener('click', () => {
+      requestEmailCode(email, section, true);
+    });
+    section.querySelector('#cloud-change-email').addEventListener('click', () => {
+      renderAuthForm(section, email, 'Enter an email address to get a new sign-in code.');
+    });
+    tokenInput.focus();
   }
 
   function hideAuth() {
@@ -138,38 +122,52 @@
     return new URL(homePath, location.href).href;
   }
 
-  function getEmailConfirmationUrl() {
-    return new URL('index.html', PRODUCTION_SITE_URL).href;
-  }
-
   async function finishSignIn(user) {
     await connectUser(user);
     const homeUrl = getHomeUrl();
     if (location.href !== homeUrl) location.replace(homeUrl);
   }
 
-  async function submitAuth(mode) {
-    const root = document.getElementById('cloud-auth-root');
-    if (!root) return;
-    const email = root.querySelector('#cloud-email').value.trim();
-    const password = root.querySelector('#cloud-password').value;
-    showAuth('', true);
+  async function requestEmailCode(email, section, resend) {
+    const message = section.querySelector('#cloud-auth-message');
+    const sendButton = section.querySelector('#cloud-send-code') || section.querySelector('#cloud-resend-code');
+    section.querySelectorAll('button, input').forEach(control => { control.disabled = true; });
+    if (sendButton) sendButton.textContent = 'Sending code…';
     try {
-      const result = mode === 'signup'
-        ? await client.auth.signUp({ email, password, options: { emailRedirectTo: getEmailConfirmationUrl() } })
-        : await client.auth.signInWithPassword({ email, password });
+      const result = await client.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: true }
+      });
       if (result.error) throw result.error;
-      if (mode === 'signup' && !result.data.session) {
-        showConfirmation(email);
+      if (resend) {
+        section.querySelectorAll('button, input').forEach(control => { control.disabled = false; });
+        if (sendButton) sendButton.textContent = 'Send a new code';
+        message.textContent = 'A new code was sent. Check your inbox and spam folder.';
         return;
       }
-      if (result.data.session) await finishSignIn(result.data.session.user);
+      renderOtpForm(section, email);
     } catch (error) {
-      if (mode === 'signin' && /email not confirmed/i.test(error.message || '')) {
-        showConfirmation(email, 'Your account still needs email confirmation. Check your inbox or spam folder, then come back and sign in.');
-      } else {
-        showAuth(error.message || 'Could not sign in. Check your connection and try again.', false);
+      if (resend) {
+        section.querySelectorAll('button, input').forEach(control => { control.disabled = false; });
+        if (sendButton) sendButton.textContent = 'Send a new code';
+        message.textContent = error.message || 'Could not send a new code. Wait a moment and try again.';
+      } else renderAuthForm(section, email, error.message || 'Could not send a code. Check your connection and try again.');
+    }
+  }
+
+  async function verifyEmailCode(email, token, section) {
+    section.querySelectorAll('button, input').forEach(control => { control.disabled = true; });
+    const verifyButton = section.querySelector('#cloud-verify-code');
+    if (verifyButton) verifyButton.textContent = 'Checking code…';
+    try {
+      const result = await client.auth.verifyOtp({ email, token, type: 'email' });
+      if (result.error) throw result.error;
+      if (!result.data.session || !result.data.session.user) {
+        throw new Error('The code was accepted, but no sign-in session was returned. Request a new code and try again.');
       }
+      await finishSignIn(result.data.session.user);
+    } catch (error) {
+      renderOtpForm(section, email, error.message || 'Could not verify that code. Check it and try again.', token);
     }
   }
 
