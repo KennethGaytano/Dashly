@@ -44,71 +44,64 @@
       document.body.appendChild(root);
     }
     const section = root.querySelector('.cloud-auth-card');
-    if (!section.querySelector('#cloud-email-form, #cloud-otp-form')) renderAuthForm(section);
+    if (!section.querySelector('#cloud-auth-form')) renderAuthForm(section);
     const messageEl = root.querySelector('#cloud-auth-message');
     if (messageEl && message !== undefined) messageEl.textContent = message;
     root.querySelectorAll('button, input').forEach(control => { control.disabled = !!busy; });
-    const sendButton = root.querySelector('#cloud-send-code');
-    if (sendButton) sendButton.textContent = busy ? 'Connecting…' : 'Send me a code';
-    const verifyButton = root.querySelector('#cloud-verify-code');
-    if (verifyButton) verifyButton.textContent = busy ? 'Connecting…' : 'Verify and sign in';
+    const signinButton = root.querySelector('#cloud-signin');
+    if (signinButton) signinButton.textContent = busy ? 'Connecting…' : 'Sign in';
+    const signupButton = root.querySelector('#cloud-signup');
+    if (signupButton) signupButton.textContent = busy ? 'Creating…' : 'Create account';
   }
 
-  function renderAuthForm(section, email, message) {
+  function showLoading(message) {
+    let root = document.getElementById('cloud-auth-root');
+    if (!root) {
+      root = document.createElement('div');
+      root.id = 'cloud-auth-root';
+      document.body.appendChild(root);
+    }
+    const logoPath = location.pathname.includes('/pages/')
+      ? '../assets/brand/dashly-logo.svg'
+      : 'assets/brand/dashly-logo.svg';
+    root.innerHTML = [
+      '<section class="cloud-auth-card cloud-loading-card" role="status" aria-live="polite">',
+      '<img src="' + logoPath + '" alt="Dashly" class="cloud-auth-logo">',
+      '<span class="cloud-loading-spinner" aria-hidden="true"></span>',
+      '<p class="cloud-loading-message"></p>',
+      '</section>'
+    ].join('');
+    root.querySelector('.cloud-loading-message').textContent = message;
+  }
+
+  function renderAuthForm(section, email, message, password) {
     section.innerHTML = [
       '<img src="' + (location.pathname.includes('/pages/') ? '../assets/brand/dashly-logo.svg' : 'assets/brand/dashly-logo.svg') + '" alt="Dashly" class="cloud-auth-logo">',
-      '<h1 id="cloud-auth-title">Sign in to Dashly</h1>',
-      '<p class="cloud-auth-description">Enter your email and we’ll send you a one-time code. New accounts can be created with a code too.</p>',
-      '<form id="cloud-email-form">',
+      '<h1 id="cloud-auth-title">Your dashboard, synced</h1>',
+      '<p class="cloud-auth-description">Sign in or create an account with your email and password.</p>',
+      '<form id="cloud-auth-form">',
       '<label for="cloud-email">Email</label><input id="cloud-email" name="email" type="email" autocomplete="email" required>',
+      '<label for="cloud-password">Password</label><input id="cloud-password" name="password" type="password" autocomplete="current-password" minlength="8" required>',
       '<p id="cloud-auth-message" class="cloud-auth-message" role="status" aria-live="polite"></p>',
-      '<button id="cloud-send-code" class="btn btn-primary" type="submit">Send me a code</button>',
+      '<button id="cloud-signin" class="btn btn-primary" type="submit">Sign in</button>',
+      '<button id="cloud-signup" class="btn btn-secondary" type="button">Create account</button>',
       '</form>'
     ].join('');
-    const form = section.querySelector('#cloud-email-form');
+    const form = section.querySelector('#cloud-auth-form');
     const emailInput = section.querySelector('#cloud-email');
+    const passwordInput = section.querySelector('#cloud-password');
     if (email) emailInput.value = email;
+    if (password) passwordInput.value = password;
     section.querySelector('#cloud-auth-message').textContent = message || '';
+    section.querySelector('#cloud-signup').addEventListener('click', () => {
+      if (form.reportValidity()) submitAuth('signup');
+    });
     form.addEventListener('submit', event => {
       event.preventDefault();
-      requestEmailCode(emailInput.value.trim(), section);
+      submitAuth('signin');
     });
     if (!email) emailInput.focus();
-  }
-
-  function renderOtpForm(section, email, message, token) {
-    section.innerHTML = [
-      '<img src="' + (location.pathname.includes('/pages/') ? '../assets/brand/dashly-logo.svg' : 'assets/brand/dashly-logo.svg') + '" alt="Dashly" class="cloud-auth-logo">',
-      '<div class="cloud-confirmation-icon" aria-hidden="true">#</div>',
-      '<h1 id="cloud-auth-title">Enter your code</h1>',
-      '<p class="cloud-auth-description">We sent a six-digit sign-in code to <strong class="cloud-confirmation-email"></strong>. Enter it here to continue.</p>',
-      '<form id="cloud-otp-form">',
-      '<label for="cloud-otp">Email code</label><input id="cloud-otp" class="cloud-otp-input" name="token" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required>',
-      '<p id="cloud-auth-message" class="cloud-auth-message" role="status" aria-live="polite"></p>',
-      '<button id="cloud-verify-code" class="btn btn-primary" type="submit">Verify and sign in</button>',
-      '<button id="cloud-resend-code" class="btn btn-secondary" type="button">Send a new code</button>',
-      '<button id="cloud-change-email" class="btn btn-secondary" type="button">Use a different email</button>',
-      '</form>'
-    ].join('');
-    section.querySelector('.cloud-confirmation-email').textContent = email;
-    section.querySelector('#cloud-auth-message').textContent = message || 'Check your inbox and spam folder for the code.';
-    const form = section.querySelector('#cloud-otp-form');
-    const tokenInput = section.querySelector('#cloud-otp');
-    if (token) tokenInput.value = token;
-    tokenInput.addEventListener('input', () => {
-      tokenInput.value = tokenInput.value.replace(/\D/g, '').slice(0, 6);
-    });
-    form.addEventListener('submit', event => {
-      event.preventDefault();
-      verifyEmailCode(email, tokenInput.value.trim(), section);
-    });
-    section.querySelector('#cloud-resend-code').addEventListener('click', () => {
-      requestEmailCode(email, section, true);
-    });
-    section.querySelector('#cloud-change-email').addEventListener('click', () => {
-      renderAuthForm(section, email, 'Enter an email address to get a new sign-in code.');
-    });
-    tokenInput.focus();
+    else passwordInput.focus();
   }
 
   function hideAuth() {
@@ -128,46 +121,33 @@
     if (location.href !== homeUrl) location.replace(homeUrl);
   }
 
-  async function requestEmailCode(email, section, resend) {
-    const message = section.querySelector('#cloud-auth-message');
-    const sendButton = section.querySelector('#cloud-send-code') || section.querySelector('#cloud-resend-code');
+  async function submitAuth(mode) {
+    const root = document.getElementById('cloud-auth-root');
+    if (!root) return;
+    const section = root.querySelector('.cloud-auth-card');
+    const email = section.querySelector('#cloud-email').value.trim();
+    const password = section.querySelector('#cloud-password').value;
     section.querySelectorAll('button, input').forEach(control => { control.disabled = true; });
-    if (sendButton) sendButton.textContent = 'Sending code…';
+    const actionButton = section.querySelector(mode === 'signup' ? '#cloud-signup' : '#cloud-signin');
+    if (actionButton) actionButton.textContent = mode === 'signup' ? 'Creating…' : 'Signing in…';
     try {
-      const result = await client.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: true }
-      });
+      const result = mode === 'signup'
+        ? await client.auth.signUp({ email, password })
+        : await client.auth.signInWithPassword({ email, password });
       if (result.error) throw result.error;
-      if (resend) {
-        section.querySelectorAll('button, input').forEach(control => { control.disabled = false; });
-        if (sendButton) sendButton.textContent = 'Send a new code';
-        message.textContent = 'A new code was sent. Check your inbox and spam folder.';
+      if (mode === 'signup' && !result.data.session) {
+        throw new Error('Account creation still requires email confirmation. In Supabase, turn off Authentication → Sign In / Providers → Email → Confirm email, then create the account again.');
+      }
+      if (result.data.session && result.data.session.user) {
+        await finishSignIn(result.data.session.user);
         return;
       }
-      renderOtpForm(section, email);
+      throw new Error('No signed-in session was returned. Check the Supabase Email provider settings and try again.');
     } catch (error) {
-      if (resend) {
-        section.querySelectorAll('button, input').forEach(control => { control.disabled = false; });
-        if (sendButton) sendButton.textContent = 'Send a new code';
-        message.textContent = error.message || 'Could not send a new code. Wait a moment and try again.';
-      } else renderAuthForm(section, email, error.message || 'Could not send a code. Check your connection and try again.');
-    }
-  }
-
-  async function verifyEmailCode(email, token, section) {
-    section.querySelectorAll('button, input').forEach(control => { control.disabled = true; });
-    const verifyButton = section.querySelector('#cloud-verify-code');
-    if (verifyButton) verifyButton.textContent = 'Checking code…';
-    try {
-      const result = await client.auth.verifyOtp({ email, token, type: 'email' });
-      if (result.error) throw result.error;
-      if (!result.data.session || !result.data.session.user) {
-        throw new Error('The code was accepted, but no sign-in session was returned. Request a new code and try again.');
-      }
-      await finishSignIn(result.data.session.user);
-    } catch (error) {
-      renderOtpForm(section, email, error.message || 'Could not verify that code. Check it and try again.', token);
+      const message = mode === 'signin' && /email not confirmed/i.test(error.message || '')
+        ? 'This account is still marked as unconfirmed in Supabase. Disable Confirm email for new accounts; an existing unconfirmed account may need to be confirmed in Supabase or recreated.'
+        : error.message || (mode === 'signup' ? 'Could not create your account. Try again.' : 'Could not sign in. Check your email and password.');
+      renderAuthForm(section, email, message, password);
     }
   }
 
@@ -478,12 +458,12 @@
 
   async function loadUser(user) {
     currentUserId = user.id;
-    if (originalGetItem.call(localStorage, USER_MARKER) !== user.id) {
-      showAuth('Loading your synced dashboard…', true);
-    }
+    const previousUser = originalGetItem.call(localStorage, USER_MARKER);
+    showLoading(previousUser === user.id
+      ? 'Restoring your dashboard…'
+      : 'Loading your synced dashboard…');
     try {
       let records = await fetchAllCollections();
-      const previousUser = originalGetItem.call(localStorage, USER_MARKER);
       if (previousUser !== user.id) {
         Object.values(STORAGE_KEYS).forEach(key => originalRemoveItem.call(localStorage, key));
         originalRemoveItem.call(localStorage, PENDING_KEY);
@@ -653,7 +633,9 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    if (!originalGetItem.call(localStorage, USER_MARKER)) {
+    if (originalGetItem.call(localStorage, USER_MARKER)) {
+      showLoading('Restoring your dashboard…');
+    } else {
       showAuth('Connecting to Dashly…', true);
     }
     boot().catch(error => {

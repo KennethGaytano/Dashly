@@ -31,18 +31,21 @@ window.supabase = {
           if (authStateChange) authStateChange('SIGNED_OUT', null);
           return { error: null };
         },
-        async signInWithOtp({ email, options }) {
-          localStorage.setItem('__auth_test_otp_request', JSON.stringify({ email, options }));
-          const count = Number(localStorage.getItem('__auth_test_otp_count') || 0) + 1;
-          localStorage.setItem('__auth_test_otp_count', String(count));
-          return { data: { user: null, session: null }, error: null };
-        },
-        async verifyOtp({ email, token, type }) {
-          localStorage.setItem('__auth_test_otp_verify', JSON.stringify({ email, token, type }));
-          if (token !== '123456') {
-            return { data: { session: null }, error: { message: 'Invalid OTP' } };
+        async signUp({ email, password }) {
+          localStorage.setItem('__auth_test_signup', JSON.stringify({ email, password }));
+          if (localStorage.getItem('__auth_test_require_confirmation') === 'true') {
+            return { data: { user: { id: 'password-user', email }, session: null }, error: null };
           }
-          const session = { user: { id: 'otp-user', email } };
+          const session = { user: { id: 'password-user', email } };
+          localStorage.setItem('__auth_test_session', JSON.stringify(session));
+          return { data: { session }, error: null };
+        },
+        async signInWithPassword({ email, password }) {
+          localStorage.setItem('__auth_test_signin', JSON.stringify({ email, password }));
+          if (password !== 'password123') {
+            return { data: { session: null }, error: { message: 'Invalid login credentials' } };
+          }
+          const session = { user: { id: 'password-user', email } };
           localStorage.setItem('__auth_test_session', JSON.stringify(session));
           return { data: { session }, error: null };
         }
@@ -93,58 +96,65 @@ try {
   );
   await page.goto(`http://localhost:${port}/pages/tasks.html`);
 
-  assert.equal(await page.locator('#cloud-password').count(), 0, 'OTP sign-in should not ask for a password');
+  assert.equal(await page.locator('#cloud-password').count(), 1, 'password auth should show a password field');
+  assert.equal(await page.locator('#cloud-otp-form').count(), 0, 'password auth should not show an OTP form');
   await page.locator('#cloud-email').fill('person@gmail.com');
-  await page.locator('#cloud-send-code').click();
-  await page.getByRole('heading', { name: 'Enter your code' }).waitFor();
-  const request = await page.evaluate(() => JSON.parse(localStorage.getItem('__auth_test_otp_request')));
-  assert.equal(request.email, 'person@gmail.com');
-  assert.equal(request.options.shouldCreateUser, true, 'OTP sign-in should support new and existing accounts');
-  assert.equal(await page.locator('#cloud-otp').getAttribute('autocomplete'), 'one-time-code');
-  assert.equal(await page.locator('.cloud-inbox-link').count(), 0, 'OTP flow should not direct users to an email link');
-
-  await page.locator('#cloud-otp').fill('12x345678');
-  assert.equal(await page.locator('#cloud-otp').inputValue(), '123456', 'OTP input should keep six numeric digits');
-  await page.locator('#cloud-otp').fill('000000');
-  await page.locator('#cloud-verify-code').click();
-  await page.getByText('Invalid OTP').waitFor();
-  assert.equal(await page.locator('#cloud-otp-form').count(), 1, 'invalid OTP should leave the user on the code screen');
-
-  await page.locator('#cloud-resend-code').click();
-  await page.getByText('A new code was sent. Check your inbox and spam folder.').waitFor();
-  assert.equal(await page.evaluate(() => localStorage.getItem('__auth_test_otp_count')), '2');
-
-  await page.locator('#cloud-otp').fill('123456');
-  await page.locator('#cloud-verify-code').click();
+  await page.locator('#cloud-password').fill('password123');
+  await page.evaluate(() => localStorage.setItem('__auth_test_require_confirmation', 'true'));
+  await page.locator('#cloud-signup').click();
+  await page.getByText(/Account creation still requires email confirmation/).waitFor();
+  assert.equal(await page.locator('#cloud-otp-form').count(), 0, 'confirmation notice should not redirect users to OTP');
+  await page.evaluate(() => localStorage.removeItem('__auth_test_require_confirmation'));
+  await page.locator('#cloud-signup').click();
   await page.waitForURL('**/index.html');
-  assert.equal(await page.title(), 'Dashboard — Home', 'successful OTP verification from a feature page should land on Home');
-  assert.equal(await page.locator('#cloud-auth-root').count(), 0, 'successful OTP verification should close the auth screen');
-  const verification = await page.evaluate(() => JSON.parse(localStorage.getItem('__auth_test_otp_verify')));
-  assert.equal(verification.email, 'person@gmail.com');
-  assert.equal(verification.token, '123456');
-  assert.equal(verification.type, 'email');
+  assert.equal(await page.title(), 'Dashboard — Home', 'successful signup from a feature page should land on Home');
+  assert.equal(await page.locator('#cloud-auth-root').count(), 0, 'successful signup should close the auth screen');
+  const signup = await page.evaluate(() => JSON.parse(localStorage.getItem('__auth_test_signup')));
+  assert.equal(signup.email, 'person@gmail.com');
+  assert.equal(signup.password, 'password123');
+
+  await page.locator('#cloud-account-control .cloud-signout').click();
+  await page.waitForTimeout(100);
+  assert.equal(await page.locator('#cloud-auth-form').count(), 1, 'sign-out should return to the password form');
+  await page.locator('#cloud-email').fill('person@gmail.com');
+  await page.locator('#cloud-password').fill('wrongpass');
+  await page.locator('#cloud-auth-form').locator('button[type="submit"]').click();
+  await page.getByText('Invalid login credentials').waitFor();
+  await page.locator('#cloud-password').fill('password123');
+  await page.locator('#cloud-auth-form').locator('button[type="submit"]').click();
+  await page.locator('#cloud-account-control').waitFor();
+  const signin = await page.evaluate(() => JSON.parse(localStorage.getItem('__auth_test_signin')));
+  assert.equal(signin.email, 'person@gmail.com');
+  assert.equal(signin.password, 'password123');
 
   await page.evaluate(() => localStorage.setItem('__auth_test_delay', '700'));
   await page.goto(`http://localhost:${port}/pages/tasks.html`);
   assert.equal(
     await page.locator('html').evaluate(element => element.classList.contains('cloud-locked')),
-    false,
-    'known signed-in users should not have the page hidden while cloud sync restores'
+    true,
+    'known signed-in users should keep the page hidden while cloud data restores'
   );
   assert.equal(
-    await page.locator('#cloud-auth-root').count(),
-    0,
-    'known signed-in users should not see the connecting/login overlay during page navigation'
+    await page.locator('.cloud-loading-card').count(),
+    1,
+    'returning users should see a neutral restore indicator rather than the sign-in form'
+  );
+  assert.equal(await page.locator('#cloud-auth-form').count(), 0, 'restore should not flash the sign-in form');
+  await page.locator('#cloud-auth-root').waitFor({ state: 'detached' });
+  assert.equal(
+    await page.locator('html').evaluate(element => element.classList.contains('cloud-locked')),
+    false,
+    'the dashboard should unlock after its cloud data is restored'
   );
   await page.locator('#cloud-account-control').waitFor();
   await page.evaluate(() => localStorage.removeItem('__auth_test_delay'));
 
   await page.locator('#cloud-account-control .cloud-signout').click();
   await page.waitForTimeout(100);
-  assert.equal(await page.locator('#cloud-auth-root').count(), 1, 'signing out should return to the email code screen');
-  assert.equal(await page.locator('#cloud-send-code').count(), 1);
+  assert.equal(await page.locator('#cloud-auth-root').count(), 1, 'signing out should return to the password screen');
+  assert.equal(await page.locator('#cloud-signin').count(), 1);
 
-  console.log('Auth tests passed: OTP request, resend, invalid-code feedback, verification, new-account option, Home landing, and returning-user navigation.');
+  console.log('Auth tests passed: password signup, email-confirmation guidance, invalid-password feedback, sign-in, Home landing, and returning-user navigation.');
 } finally {
   if (browser) await browser.close();
   server.kill();

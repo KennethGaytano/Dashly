@@ -172,7 +172,7 @@ Personal_DashBoard/
     ├── server.mjs          # HTTP server for serving static files
     ├── driver.mjs          # Interactive Playwright driver
     ├── smoke.mjs           # Cross-page smoke test
-    ├── auth-tests.mjs      # Sign-up email confirmation and inbox link tests
+    ├── auth-tests.mjs      # Password sign-up, sign-in, and confirmation-setting tests
     ├── task-tests.mjs      # Task management test suite
     ├── goals-tests.mjs     # Goals test suite
     ├── notes-tests.mjs     # Notes search, read view, edit, and empty-state tests

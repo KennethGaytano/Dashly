@@ -16,9 +16,11 @@ ships is exactly what is in the repository. Data lives in the browser for
 instant reads and is synchronised per account to Supabase, so the dashboard works
 the same offline-first on a laptop and on a phone.
 
-Authentication is a six-digit email code rather than a password. Enter an email,
-request a code, verify it on the same page; new accounts are created through the
-same flow, with no confirmation link or redirect.
+Authentication uses email and password. Users can create an account or sign in
+from the dashboard. To make new accounts usable immediately without an email
+verification step, disable **Confirm email** for the Email provider in the
+Supabase project's Authentication settings. Existing accounts created through
+the previous email-code flow may need a password set before password sign-in.
 
 The interface is responsive down to 320px: below 768px the sidebar becomes an
 off-canvas drawer with a sticky app bar and a five-destination tab bar, and
@@ -60,7 +62,7 @@ wrong theme.
 | --- | --- |
 | Markup & styles | Static HTML, modern CSS (custom properties, `dvh`, `env(safe-area-inset-*)`) |
 | Logic | Vanilla JavaScript, no dependencies |
-| Auth | Supabase Auth — six-digit email OTP, publishable key in the browser |
+| Auth | Supabase Auth — email and password, publishable key in the browser |
 | Database | Supabase / PostgreSQL, single `public.dashboard_records` table |
 | Security | Row Level Security — every account sees only its own records |
 | Sync | Supabase Realtime, plus a `localStorage` cache for synchronous reads |
@@ -84,7 +86,7 @@ they all bind port 3000, so two in parallel make the second fail with
 cd .claude/skills/run-personal-dashboard
 
 node smoke.mjs              # all pages load, navigation, core interactions
-node auth-tests.mjs         # sign-up, sign-in, OTP redirects
+node auth-tests.mjs         # password sign-up, sign-in, confirmation settings
 node task-tests.mjs         # one behaviour suite per feature area
 node goals-tests.mjs
 node notes-tests.mjs
