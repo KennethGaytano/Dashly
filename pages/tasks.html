@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <script>document.documentElement.classList.add('cloud-locked');</script>
+    <script>
+        try {
+            if (!localStorage.getItem('dashly_cloud_user_id')) document.documentElement.classList.add('cloud-locked');
+        } catch {
+            document.documentElement.classList.add('cloud-locked');
+        }
+    </script>
     <script src="../scripts/theme.js"></script>
     <title>Dashboard — Tasks</title>
     <link rel="icon" href="../assets/brand/dashly-logo.svg" type="image/svg+xml">

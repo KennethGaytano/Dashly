@@ -74,11 +74,9 @@
     --focus-ring: 0 0 0 3px rgba(36, 74, 120, 0.2);
 }
 
-/* Z-index ladder. Every fixed layer names its rung so the mobile app bar and
-   tab bar can be slotted in without disturbing the stacking order:
-     modal 1000 < toast 2000 < scrim 450 < drawer 500 < skip link 3000
-   The scrim sits above the app bar (200) and the tab bar (340) so opening the
-   drawer dims the whole page, not just the content column. */
+/* Z-index ladder: drawer scrim 450 < drawer 500 < form backdrop 900 <
+   form dialog 950 < confirmation modal 1000 < toast 2000 < skip link 3000.
+   The scrim sits above the app bar (200) and tab bar (340), dimming the page. */
 
 /* ===== Custom scrollbar (all pages) ===== */
 ::-webkit-scrollbar { width: 8px; height: 8px; }

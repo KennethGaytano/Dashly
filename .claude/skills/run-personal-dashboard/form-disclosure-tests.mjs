@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Form disclosure contract.
+ * Form popup contract.
  *
- * Every add/edit form on the site starts collapsed behind a button and opens
- * when the user asks to add something, or clicks edit on an existing item.
+ * Every add/edit form on the site starts closed behind a button and opens as
+ * an accessible popup when the user asks to add something or clicks Edit.
  * These checks cover that contract once across all six pages rather than
  * duplicating it in each page's own suite.
  *
@@ -88,8 +88,24 @@ for (const [url, label, trigger, panel, field] of FORMS) {
   eq(s.expanded, 'true', `${label}: clicking the trigger sets aria-expanded="true"`);
   eq(s.panelHidden, false, `${label}: the panel is visible after the click`);
   assert(await page.locator(field).isVisible(), `${label}: the first field is visible`);
+  eq(await page.locator(panel).getAttribute('role'), 'dialog', `${label}: the form is announced as a dialog`);
+  eq(await page.locator(panel).getAttribute('aria-modal'), 'true', `${label}: the popup is modal to assistive technology`);
+  assert(await page.locator(panel).getAttribute('aria-labelledby'),
+    `${label}: the popup has an accessible title`);
+  eq(await page.locator(panel).evaluate(element => element.parentElement === document.body),
+    true, `${label}: the popup escapes transformed page sections`);
+  assert(await page.locator(panel).locator('.form-dialog-close').isVisible(),
+    `${label}: a visible close button is available`);
+  assert(await page.locator('.form-dialog-backdrop.is-visible').count() === 1,
+    `${label}: the popup opens with a dimmed backdrop`);
   eq(await page.evaluate(() => document.activeElement?.id), field.replace('#', ''),
     `${label}: focus moved into the first field`);
+  await page.keyboard.press('Shift+Tab');
+  assert(await page.locator(panel).evaluate(element => element.contains(document.activeElement)),
+    `${label}: reverse tab stays inside the popup`);
+  await page.keyboard.press('Tab');
+  eq(await page.evaluate(() => document.activeElement?.id), field.replace('#', ''),
+    `${label}: tab wraps back to the first field`);
 
   await page.keyboard.press('Escape');
   await page.waitForTimeout(200);
@@ -97,11 +113,29 @@ for (const [url, label, trigger, panel, field] of FORMS) {
   eq(s.expanded, 'false', `${label}: Escape collapses the form`);
   eq(await page.evaluate(() => document.activeElement?.getAttribute('aria-expanded')), 'false',
     `${label}: focus returned to the trigger`);
+  eq(await page.locator('.form-dialog-backdrop').count(), 0, `${label}: closing removes the backdrop`);
+  eq(await page.locator('html').evaluate(element => element.classList.contains('form-dialog-open')),
+    false, `${label}: closing restores page scrolling`);
+  eq(await page.locator(panel).evaluate(element => element.parentElement !== document.body),
+    true, `${label}: closing returns the form to its page section`);
 
   // Escape must not close something the user never opened.
   await page.keyboard.press('Escape');
   await page.waitForTimeout(150);
   eq((await state()).expanded, 'false', `${label}: a second Escape is harmless`);
+
+  await page.click(trigger);
+  await page.locator('.form-dialog-backdrop.is-visible').waitFor();
+  await page.locator('.form-dialog-backdrop').click({ position: { x: 5, y: 5 } });
+  await page.waitForTimeout(200);
+  eq((await state()).expanded, 'false', `${label}: clicking outside dismisses the popup`);
+  eq(await page.evaluate(() => document.activeElement?.getAttribute('aria-expanded')), 'false',
+    `${label}: backdrop dismissal returns focus to the opener`);
+
+  await page.click(trigger);
+  await page.locator(panel).locator('.form-dialog-close').click();
+  await page.waitForTimeout(200);
+  eq((await state()).expanded, 'false', `${label}: the close button dismisses the popup`);
 }
 
 console.log('\n--- The trigger toggles ---');

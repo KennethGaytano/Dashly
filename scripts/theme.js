@@ -4,13 +4,22 @@
   const STORAGE_KEY = 'dashly-theme';
   const root = document.documentElement;
 
+  function getSystemTheme() {
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+      ? 'light'
+      : 'dark';
+  }
+
   function readTheme() {
     try {
-      return window.localStorage.getItem(STORAGE_KEY) === 'light' ? 'light' : 'dark';
+      const savedTheme = window.localStorage.getItem(STORAGE_KEY);
+      if (savedTheme === 'light' || savedTheme === 'dark') {
+        return savedTheme;
+      }
     } catch (error) {
       console.error('Unable to read the saved appearance preference.', error);
-      return 'dark';
     }
+    return getSystemTheme();
   }
 
   function updateControls(theme) {
@@ -27,10 +36,13 @@
     });
   }
 
-  function setTheme(theme) {
+  function applyTheme(theme) {
     root.dataset.theme = theme;
     updateControls(theme);
+  }
 
+  function setTheme(theme) {
+    applyTheme(theme);
     try {
       window.localStorage.setItem(STORAGE_KEY, theme);
     } catch (error) {
@@ -38,11 +50,10 @@
     }
   }
 
-  const initialTheme = readTheme();
-  root.dataset.theme = initialTheme;
+  applyTheme(readTheme());
 
   function init() {
-    updateControls(initialTheme);
+    updateControls(root.dataset.theme);
     document.querySelectorAll('.theme-toggle').forEach((button) => {
       button.addEventListener('click', () => {
         setTheme(root.dataset.theme === 'light' ? 'dark' : 'light');

@@ -173,11 +173,12 @@ Personal_DashBoard/
     ├── driver.mjs          # Interactive Playwright driver
     ├── smoke.mjs           # Cross-page smoke test
     ├── auth-tests.mjs      # Password sign-up, sign-in, and confirmation-setting tests
+    ├── theme-tests.mjs     # System appearance defaults and saved theme preference
     ├── task-tests.mjs      # Task management test suite
     ├── goals-tests.mjs     # Goals test suite
     ├── notes-tests.mjs     # Notes search, read view, edit, and empty-state tests
     ├── calendar-tests.mjs  # Calendar test suite (grid, CRUD, delete dialog)
-    ├── form-disclosure-tests.mjs # Collapsed-form contract across all 6 pages
+    ├── form-disclosure-tests.mjs # Popup, keyboard, and close behavior across 6 pages
     ├── disclosure-shots.mjs # Screenshots: closed vs open, phone + desktop
     ├── progress-tests.mjs  # Progress page test suite
     ├── mobile-audit.mjs    # Mobile geometry sweep, 6 widths x 6 pages
@@ -352,8 +353,8 @@ console.log('Checkbox persisted:', isChecked);
 - **`mobile-audit.mjs` seeds data; `mobile-shots.mjs` does not.** The older screenshot script launches with empty `localStorage`, so every content view renders its empty state. Use the audit script for anything that depends on real content — it caught layout bugs the empty captures could never show.
 - **A full-page screenshot cannot show a `position: fixed` element honestly.** Playwright renders beyond the viewport without resizing, so the tab bar lands mid-image and looks like an overlap bug. `mobile-audit.mjs` handles this by hiding the bar for full-page shots and taking a separate viewport-only shot (`audit-<width>-chrome.png`) of the real chrome.
 - **The calendar has two scripts on one grid, so it had two selection handlers.** `calendar.js` and `calendar-events.js` each attached a click listener to `#calendarGrid` and each set the `selected` class plus its own ARIA state (`aria-pressed` vs `aria-selected`). Because both cleared `.selected` before the other could find the previously selected cell, `aria-selected` accumulated: after clicking three days the grid claimed three days were selected. `calendar-events.js` owns selection, since it also has to update the form, the day list and the dots; `calendar.js` now only renders and handles Prev/Next. `calendar-tests.mjs` asserts the state is expressed exactly once.
-- **Every form has a working Cancel, visible whenever the form is open.** The home Quick Note composer was the only one with no Cancel at all (`#cancelQuickNoteBtn`, new). The other five had one but hid it until an *edit* began, which was right when the forms were permanently visible and wrong once they became disclosures: opening a form to add something left no way to back out short of Escape. Cancel is now always visible while the form is on screen, and collapsing the panel is what takes it out of view. The `display:none` / `hidden` juggling in `startEdit*` and `cancelEdit` is gone from all five.
-- **Every add/edit form is a disclosure.** All six forms (task, event, note, goal, track, home quick note) start collapsed behind a button and open on click, on desktop and mobile. `scripts/form-disclosure.js` owns the behaviour; each page only supplies the trigger and the panel. The panel is hidden with the `hidden` attribute, not a CSS rule, so it leaves the tab order properly. Three things follow from that and are easy to get wrong:
+- **Every form has a working Cancel, visible whenever the popup is open.** The home Quick Note composer was the only one with no Cancel at all (`#cancelQuickNoteBtn`, new). The other five had one but hid it until an *edit* began; that left add-mode users without a clear way to discard a draft. Cancel is now always visible in the popup, and the shared close control, Escape, and backdrop dismissal provide additional ways to leave it. The `display:none` / `hidden` juggling in `startEdit*` and `cancelEdit` is gone from all five.
+- **Every add/edit form is a popup.** All six forms (task, event, note, goal, track, home quick note) start closed behind a button and open in the same animated dialog on desktop and mobile. `scripts/form-disclosure.js` owns the behaviour; each page only supplies the trigger and the panel. The closed panel uses the `hidden` attribute, and the open dialog traps keyboard focus, closes with Escape or backdrop click, and returns focus to its opener. Three things follow from that and are easy to get wrong:
   - **Editing an existing item has to call `open()`.** `startEditTask`, `startEditEvent`, `startEditNote` and `startEditGoal` each reveal the form, or a user clicks Edit and sees nothing.
   - **Saving has to call `close()` on the add path too.** `cancelEdit()` already ran on the edit path, so only guarding the add path with `if (!editingTaskId)` is correct. Goals, Notes, Tasks and Calendar each forgot this once.
   - **`restoreFocus` matters on Cancel.** Without it the Cancel button hides while holding focus, stranding the keyboard user.
@@ -373,8 +374,9 @@ console.log('Checkbox persisted:', isChecked);
 
 - **Smoke test:** `cd .claude/skills/run-personal-dashboard && node smoke.mjs`
 - **Auth confirmation:** `node auth-tests.mjs`
+- **Theme preference:** `node theme-tests.mjs` — system light/dark defaults and saved choice
 - **Behaviour suites:** `node task-tests.mjs`, `node goals-tests.mjs`, `node notes-tests.mjs`, `node progress-tests.mjs`, `node calendar-tests.mjs` — run one at a time, they all bind port 3000
-- **Collapsed forms:** `node form-disclosure-tests.mjs` — the open/close contract across all six pages
+- **Form popups:** `node form-disclosure-tests.mjs` — open/close, keyboard, and focus behavior across all six pages
 - **Disclosure screenshots:** `node disclosure-shots.mjs` — closed vs open form at 390px and 1280px
 - **Mobile regression:** `node mobile-audit.mjs` (geometry across 6 widths), `node mobile-nav-tests.mjs` (app bar / tab bar / drawer behaviour), `node width-sweep.mjs` (16 widths, hostile content — run `SHOT=1 node width-sweep.mjs` for PNGs)
 - **Overflow diagnosis:** `node layout-chain.mjs [width]` — names the element forcing a horizontal scroll

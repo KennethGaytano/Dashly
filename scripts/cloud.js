@@ -459,9 +459,7 @@
   async function loadUser(user) {
     currentUserId = user.id;
     const previousUser = originalGetItem.call(localStorage, USER_MARKER);
-    showLoading(previousUser === user.id
-      ? 'Restoring your dashboard…'
-      : 'Loading your synced dashboard…');
+    if (previousUser !== user.id) showLoading('Loading your synced dashboard…');
     try {
       let records = await fetchAllCollections();
       if (previousUser !== user.id) {
@@ -633,9 +631,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    if (originalGetItem.call(localStorage, USER_MARKER)) {
-      showLoading('Restoring your dashboard…');
-    } else {
+    if (!originalGetItem.call(localStorage, USER_MARKER)) {
       showAuth('Connecting to Dashly…', true);
     }
     boot().catch(error => {

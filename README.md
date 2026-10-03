@@ -54,7 +54,8 @@ wrong theme.
   ladder.
 - **Cross-device sync** — changes land on your other open tabs and devices via
   Supabase Realtime.
-- **Light and dark themes** — a toggle that remembers your choice.
+- **Light and dark themes** — first visits follow your device preference;
+  the toggle saves your choice for future visits.
 
 ## Tech stack
 
@@ -87,6 +88,7 @@ cd .claude/skills/run-personal-dashboard
 
 node smoke.mjs              # all pages load, navigation, core interactions
 node auth-tests.mjs         # password sign-up, sign-in, confirmation settings
+node theme-tests.mjs        # system appearance default and saved theme choice
 node task-tests.mjs         # one behaviour suite per feature area
 node goals-tests.mjs
 node notes-tests.mjs

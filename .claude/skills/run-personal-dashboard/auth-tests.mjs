@@ -131,21 +131,15 @@ try {
   await page.goto(`http://localhost:${port}/pages/tasks.html`);
   assert.equal(
     await page.locator('html').evaluate(element => element.classList.contains('cloud-locked')),
-    true,
-    'known signed-in users should keep the page hidden while cloud data restores'
+    false,
+    'a returning user with a local cache should not have the page locked during cloud sync'
   );
   assert.equal(
     await page.locator('.cloud-loading-card').count(),
-    1,
-    'returning users should see a neutral restore indicator rather than the sign-in form'
+    0,
+    'returning users should not see a restore overlay while switching pages'
   );
-  assert.equal(await page.locator('#cloud-auth-form').count(), 0, 'restore should not flash the sign-in form');
-  await page.locator('#cloud-auth-root').waitFor({ state: 'detached' });
-  assert.equal(
-    await page.locator('html').evaluate(element => element.classList.contains('cloud-locked')),
-    false,
-    'the dashboard should unlock after its cloud data is restored'
-  );
+  assert.equal(await page.locator('#cloud-auth-root').count(), 0, 'cached navigation should not show an auth or restore screen');
   await page.locator('#cloud-account-control').waitFor();
   await page.evaluate(() => localStorage.removeItem('__auth_test_delay'));
 
