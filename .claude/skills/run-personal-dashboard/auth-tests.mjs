@@ -74,7 +74,9 @@ window.supabase = {
       from() {
         return {
           select() { return this; },
+          update() { return this; },
           eq() { return this; },
+          is() { return this; },
           then(resolve, reject) {
             const delay = Number(localStorage.getItem('__auth_test_delay') || 0);
             return new Promise(done => setTimeout(done, delay))

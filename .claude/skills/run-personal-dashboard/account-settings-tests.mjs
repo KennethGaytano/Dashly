@@ -48,7 +48,9 @@ window.supabase = {
       from() {
         return {
           select() { return this; },
+          update() { return this; },
           eq() { return this; },
+          is() { return this; },
           then(resolve, reject) {
             return Promise.resolve({ data: [], error: null }).then(resolve, reject);
           }
@@ -112,6 +114,9 @@ try {
   await profilePage.locator('#cloud-account-control').waitFor();
   await profilePage.setViewportSize({ width: 320, height: 568 });
   await profilePage.locator('.tab-more').click();
+  // The drawer slides in over a 0.3s transform transition. Measuring before it
+  // settles catches the button mid-flight, still off-canvas at translateX(-100%).
+  await profilePage.waitForTimeout(400);
   await profilePage.locator('.cloud-settings-open').waitFor({ state: 'visible' });
   const settingsButtonBounds = await profilePage.locator('.cloud-settings-open').evaluate(button => {
     const bounds = button.getBoundingClientRect();
