@@ -18,6 +18,7 @@
   const originalRemoveItem = Storage.prototype.removeItem;
   let currentUserId = null;
   let currentUsername = null;
+  let currentFirstName = '';
   let changeQueue = Promise.resolve();
   const syncTimers = new Map();
   let realtimeChannel = null;
@@ -563,6 +564,7 @@
     currentUsername = typeof metadata.username === 'string' && metadata.username
       ? metadata.username
       : null;
+    currentFirstName = typeof metadata.first_name === 'string' ? metadata.first_name : '';
     const previousUser = originalGetItem.call(localStorage, USER_MARKER);
     if (previousUser !== user.id) showLoading('Loading your synced dashboard…');
     try {
@@ -684,6 +686,7 @@
         if (!data.user) throw new Error('Supabase did not return the updated account profile.');
         user = data.user;
         currentUsername = nextUsername;
+        currentFirstName = nextFirstName;
         if (previousUsername !== nextUsername) await backfillUsername(previousUsername);
         profileStatus.textContent = 'Name saved.';
       } catch (error) {
@@ -839,6 +842,8 @@
     start(init) { ready.then(init).catch(error => console.error('Dashly cloud startup failed.', error)); },
     get client() { return client; },
     get userId() { return currentUserId; },
+    get username() { return currentUsername; },
+    get firstName() { return currentFirstName; },
     reportError(error) { console.error('Dashly cloud error:', error); },
     async signOut() {
       if (client) return client.auth.signOut();
