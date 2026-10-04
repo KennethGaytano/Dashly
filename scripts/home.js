@@ -266,26 +266,32 @@
   }
 
   /**
-   * Greet the user according to the time of day
+   * Greet the user according to the time of day, by name when we know it
    */
   function setGreeting() {
     const heading = document.getElementById('greeting');
     if (!heading) return;
 
     const hour = new Date().getHours();
-    let greeting;
+    let salutation;
     let icon;
 
     if (hour < 12) {
-      greeting = 'Good morning!';
+      salutation = 'Good morning';
       icon = '☀️';
     } else if (hour < 18) {
-      greeting = 'Good afternoon!';
+      salutation = 'Good afternoon';
       icon = '🌤️';
     } else {
-      greeting = 'Good evening!';
+      salutation = 'Good evening';
       icon = '🌙';
     }
+
+    const cloud = window.DashlyCloud;
+    const name = cloud?.username || cloud?.firstName || '';
+    const greeting = name
+      ? `${salutation}, ${escapeHtml(name)}!`
+      : `${salutation}!`;
 
     heading.innerHTML = `${greeting} <span aria-hidden="true">${icon}</span>`;
   }
