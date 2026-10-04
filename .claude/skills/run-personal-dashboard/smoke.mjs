@@ -58,6 +58,15 @@ async function runSmokeTest() {
       const title = await page.title();
       console.log(`   Page Title: "${title}"`);
 
+      const favicon = await page.locator('link[rel="icon"][type="image/svg+xml"]').getAttribute('href');
+      if (!favicon || !new URL(favicon, page.url()).pathname.endsWith('/assets/icons/favicon.svg')) {
+        throw new Error(`${p.name} page is not using the supplied SVG favicon.`);
+      }
+      const faviconResponse = await page.request.get(new URL(favicon, page.url()).href);
+      if (!faviconResponse.ok()) {
+        throw new Error(`${p.name} page favicon request failed with ${faviconResponse.status()}.`);
+      }
+
       const screenshotPath = join(OUTPUT_DIR, p.file);
       await page.screenshot({ path: screenshotPath, fullPage: true });
       console.log(`   Screenshot: ${screenshotPath}`);
