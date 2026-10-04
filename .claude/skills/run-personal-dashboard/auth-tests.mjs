@@ -53,7 +53,18 @@ window.supabase = {
           const validUsername = signup?.options?.data?.username;
           if (!signup || (body.username !== validUsername && body.username !== signup.email) ||
               body.password !== signup.password) {
-            return { data: null, error: { message: 'Invalid username or password.' } };
+            // Mirrors supabase-js: a non-2xx becomes a generic error whose real
+            // text only survives on the raw Response in error.context.
+            return {
+              data: null,
+              error: {
+                message: 'Edge Function returned a non-2xx status code',
+                context: new Response(
+                  JSON.stringify({ error: 'Invalid username or password.' }),
+                  { status: 401, headers: { 'Content-Type': 'application/json' } }
+                )
+              }
+            };
           }
           return {
             data: {
@@ -125,6 +136,14 @@ try {
   assert.equal(await page.locator('#cloud-otp-form').count(), 0, 'password auth should not show an OTP form');
   assert.equal(await page.locator('#cloud-signup').textContent(), 'Sign up', 'signup action should be clearly labelled');
   assert.match(await page.locator('.cloud-auth-description').textContent(), /sign in with your username and password/i);
+  assert.equal(
+    await page.locator('label[for="cloud-login-username"]').textContent(), 'Username or email',
+    'the sign-in field must tell legacy accounts they can use their email'
+  );
+  assert.match(
+    await page.locator('.cloud-auth-hint').textContent(), /sign in with your email/i,
+    'the hint should point legacy accounts at signing in by email'
+  );
   await page.locator('#cloud-signup').click();
   assert.match(await page.locator('.cloud-auth-description').textContent(),
     /first name, last name, username, email, and password/i);
@@ -134,6 +153,10 @@ try {
   }
   assert.equal(await page.locator('#cloud-create-account').textContent(), 'Create account');
   assert.equal(await page.locator('#cloud-back-to-signin').isVisible(), true, 'signup mode should offer a way back to sign in');
+  assert.equal(
+    await page.locator('.cloud-auth-hint').count(), 0,
+    'the legacy-account hint belongs to sign-in only; signup always collects a username'
+  );
   await page.locator('#cloud-first-name').fill('Ada');
   await page.locator('#cloud-last-name').fill('Lovelace');
   await page.locator('#cloud-username').fill('ada_codes');
@@ -174,12 +197,18 @@ try {
   }, 'signup should store the name and username as Supabase user metadata');
 
   await page.locator('#cloud-account-control .cloud-signout').click();
-  await page.waitForTimeout(100);
+  // Sign-out triggers a full location.reload(), so wait for the re-rendered form
+  // rather than a fixed delay that races the reload on a cold cache.
+  await page.locator('#cloud-auth-form').waitFor();
   assert.equal(await page.locator('#cloud-auth-form').count(), 1, 'sign-out should return to the password form');
   await page.locator('#cloud-login-username').fill('ada_codes');
   await page.locator('#cloud-password').fill('wrongpass');
   await page.locator('#cloud-auth-form').locator('button[type="submit"]').click();
   await page.getByText('Invalid username or password.').waitFor();
+  assert.equal(
+    await page.getByText('non-2xx').count(), 0,
+    "the form should never show supabase-js's generic non-2xx message"
+  );
   assert.equal(await page.locator('#cloud-login-username').inputValue(), 'ada_codes',
     'failed username sign-in should preserve the entered username');
   await page.locator('#cloud-password').fill('password123');

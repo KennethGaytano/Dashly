@@ -99,7 +99,8 @@
         : '',
       isSignup
         ? '<label for="cloud-email">Email</label><input id="cloud-email" name="email" type="email" autocomplete="email" required>'
-        : '<label for="cloud-login-username">Username</label><input id="cloud-login-username" name="username" type="text" autocomplete="username" autocapitalize="none" maxlength="320" required>',
+        : '<label for="cloud-login-username">Username or email</label><input id="cloud-login-username" name="username" type="text" autocomplete="username" autocapitalize="none" maxlength="320" required>' +
+          '<p class="cloud-auth-hint">New here? Use the username you picked at sign-up. Older accounts: sign in with your email, then add a username in Account settings.</p>',
       '<label for="cloud-password">Password</label><input id="cloud-password" name="password" type="password" autocomplete="' + (isSignup ? 'new-password' : 'current-password') + '" minlength="8" required>',
       '<p id="cloud-auth-message" class="cloud-auth-message" role="status" aria-live="polite"></p>',
       isSignup
@@ -180,6 +181,28 @@
     if (location.href !== destination) location.replace(destination);
   }
 
+  /**
+   * supabase-js replaces the Edge Function's own error body with a generic
+   * "Edge Function returned a non-2xx status code" message. The useful text is
+   * still on the raw Response, so read it back out of error.context and
+   * re-throw it as the message the form actually shows.
+   */
+  async function edgeFunctionMessage(error) {
+    const fallback = 'Could not sign in. Check your username and password.';
+    if (!error) return fallback;
+    const context = error.context;
+    if (context && typeof context.json === 'function') {
+      try {
+        const payload = await context.json();
+        if (payload && typeof payload.error === 'string' && payload.error.trim()) return payload.error.trim();
+        if (payload && typeof payload.message === 'string' && payload.message.trim()) return payload.message.trim();
+      } catch (_) {
+        // Body was not JSON or was already consumed; fall through to the generic text.
+      }
+    }
+    return error.message || fallback;
+  }
+
   async function submitAuth(mode) {
     const root = document.getElementById('cloud-auth-root');
     if (!root) return;
@@ -220,7 +243,11 @@
             const { data, error } = await client.functions.invoke('sign-in-with-username', {
               body: { username: identifier, password }
             });
-            if (error) throw error;
+            if (error) {
+              const friendly = new Error(await edgeFunctionMessage(error));
+              friendly.cause = error;
+              throw friendly;
+            }
             if (!data || !data.session) {
               throw new Error('Sign-in did not return a session. Check your username and password, then try again.');
             }

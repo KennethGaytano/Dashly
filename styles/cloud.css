@@ -110,6 +110,16 @@
     gap: 0.65rem;
 }
 
+/* Guidance under the sign-in identifier field. Quiet, but must stay legible:
+   it is the only place legacy accounts learn they can sign in by email. */
+.cloud-auth-hint {
+    margin: -0.15rem 0 0.25rem;
+    color: var(--text-secondary, #a1aab4);
+    font-size: 0.8rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+
 .cloud-auth-card input {
     width: 100%;
     min-height: 2.8rem;
