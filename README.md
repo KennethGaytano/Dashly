@@ -1,120 +1,49 @@
 # Dashly
 
-A personal productivity dashboard that puts tasks, calendar events, notes, goals,
-focus sessions, and progress in one place. Sign in and your data follows you
-across devices; sign out and nothing is left behind.
+**A personal productivity dashboard that puts tasks, calendar, notes, goals, focus sessions, and progress in one place.**  
+Sign in and your data follows you across devices; sign out and nothing is left behind.
 
-**Live site:** https://kennethgaytano.github.io/Personal-Dashboard/
-
----
-
-## About
-
-Dashly is a single-page productivity dashboard built as static HTML, CSS, and
-vanilla JavaScript. There is no framework, no bundler, and no build step — what
-ships is exactly what is in the repository. Data lives in the browser for
-instant reads and is synchronised per account to Supabase, so the dashboard works
-the same offline-first on a laptop and on a phone.
-
-Authentication uses email and password. Users can create an account or sign in
-from the dashboard. To make new accounts usable immediately without an email
-verification step, disable **Confirm email** for the Email provider in the
-Supabase project's Authentication settings. Existing accounts created through
-the previous email-code flow may need a password set before password sign-in.
-
-The interface is responsive down to 320px: below 768px the sidebar becomes an
-off-canvas drawer with a sticky app bar and a five-destination tab bar. Form
-dialogs stay centered on phones and scroll internally when they are taller than
-the viewport. Light and dark themes are driven entirely by CSS
-custom properties and applied before first paint, so the page never flashes the
-wrong theme.
+[**Try Dashly live →**](https://kennethgaytano.github.io/Personal-Dashboard/)
 
 ---
 
-## Features
+## What is Dashly?
 
-- **Tasks** — full CRUD with due dates and times, three priorities, a
-  description, optional links, and To Do / In Progress / Completed columns. Open
-  tasks past their due moment show an overdue warning.
-- **Today's Tasks** — up to three tasks including completed ones, toggleable in
-  place; the overdue badge updates immediately.
-- **Pomodoro** — start, pause, and reset across Focus and Break modes with a
-  custom 1–120 minute length. A session is recorded **only when a block actually
-  completes** — pausing early logs no time. Timer state survives a refresh.
-- **Notes** — full CRUD with a colour picker. The Home Quick Note shortcut opens
-  the full note form, and recent notes appear on the dashboard.
-- **Calendar** — full CRUD for events with dot markers on the grid, a
-  selected-day panel, and an Upcoming Events list grouped by day.
-- **Goals** — full CRUD with a milestone checklist. Ticking a milestone
-  recalculates progress, and a goal counts as Completed when every milestone is
-  ticked, when the status is set directly, or when progress hits 100 with no
-  milestones.
-- **Progress** — weekly stats over a rolling seven-day window (tasks done, hours
-  studied, pomodoros, day streak) computed from real data, plus Skills &
-  Learning and Project Completion lists. Progress moves along a fixed eight-step
-  ladder.
-- **Cross-device sync** — changes land on your other open tabs and devices via
-  Supabase Realtime.
-- **Light and dark themes** — first visits follow your device preference;
-  the toggle saves your choice for future visits.
+Dashly is a lightweight, offline-first dashboard for personal productivity. It runs entirely in your browser—no install, no setup. Create an account with email and password, and your tasks, events, notes, goals, and focus sessions sync to your private Supabase database. Open it on your laptop, phone, or tablet; everything stays in sync.
 
-## Tech stack
+---
 
-| Layer | Choice |
-| --- | --- |
-| Markup & styles | Static HTML, modern CSS (custom properties, `dvh`, `env(safe-area-inset-*)`) |
-| Logic | Vanilla JavaScript, no dependencies |
-| Auth | Supabase Auth — email and password, publishable key in the browser |
-| Database | Supabase / PostgreSQL, single `public.dashboard_records` table |
-| Security | Row Level Security — every account sees only its own records |
-| Sync | Supabase Realtime, plus a `localStorage` cache for synchronous reads |
-| Testing | Playwright (Node) for smoke, auth, per-feature, and mobile-layout suites |
-| Hosting | GitHub Pages, served as static files |
+## Key Features
 
-Cloud records live in one table keyed by `(user_id, collection, record_id)` with
-a `jsonb` payload, where `collection` is one of eight fixed keys: `tasks`,
-`events`, `notes`, `goals`, `skills`, `projects`, `pomodoro_sessions`, and
-`pomodoro_state`. A `localStorage` cache keeps page modules responsive while
-writes persist to Supabase in the background.
+| Feature | What it does |
+|---------|--------------|
+| **Tasks** | Full to-do lists with due dates, priorities, descriptions, links, and a three-column Kanban board (To Do / In Progress / Done). Overdue tasks are flagged automatically. |
+| **Calendar** | Month view with dot markers, a daily detail panel, and an upcoming-events list grouped by day. Add, edit, or delete events in seconds. |
+| **Notes** | Rich notes with a colour picker. A Quick Note shortcut on the Home page opens the full editor; recent notes surface on the dashboard. |
+| **Goals** | Set goals with milestone checklists. Progress recalculates as you tick milestones; a goal completes when all milestones are done, when you mark it complete, or when progress hits 100 %. |
+| **Progress** | Rolling seven-day stats: tasks completed, hours studied, Pomodoros, and day streak. Plus Skills & Learning and Project Completion trackers that advance along an eight-step ladder. |
+| **Pomodoro** | Focus and Break timers (1–120 minutes). Sessions only log when a block actually finishes—pausing early records nothing. Timer state survives a refresh. |
+| **Cross-device sync** | Changes appear on your other open tabs and devices in real time via Supabase Realtime. |
+| **Light & dark themes** | First visit follows your device preference; your manual choice is saved for next time. |
 
-## Running the checks
+---
 
-The Playwright suites live in `.claude/skills/run-personal-dashboard/`. Each
-starts its own server and exits non-zero on failure. **Run them one at a time** —
-they all bind port 3000, so two in parallel make the second fail with
-`ERR_CONNECTION_REFUSED`.
+## How it works
 
-```bash
-cd .claude/skills/run-personal-dashboard
+- **Offline-first** — Data lives in your browser for instant reads. Writes sync to Supabase in the background.
+- **Your account, your data** — You sign up with email + password. All records are stored in *your* Supabase project, protected by Row Level Security. No one else can see them.
+- **No installation** — Open the link and start. It works on any modern browser, desktop or mobile.
 
-node smoke.mjs              # all pages load, navigation, core interactions
-node auth-tests.mjs         # password sign-up, sign-in, confirmation settings
-node theme-tests.mjs        # system appearance default and saved theme choice
-node task-tests.mjs         # one behaviour suite per feature area
-node goals-tests.mjs
-node notes-tests.mjs
-node progress-tests.mjs
-node calendar-tests.mjs
-node mobile-audit.mjs       # overflow, tap targets, iOS zoom, across 6 widths
-node scan-encoding.mjs      # flags mojibake; run after any bulk edit
-```
+---
 
-To poke around interactively, use `driver.mjs` (`launch`, `navigate`, `click`,
-`eval`, `screenshot`, `quit`). Use the suites to prove nothing broke.
+## Get started
 
-### Running it locally
+1. Open [**https://kennethgaytano.github.io/Personal-Dashboard/**](https://kennethgaytano.github.io/Personal-Dashboard/)
+2. Click **Sign up** and create an account with your email and a password.
+3. Start adding tasks, events, notes, and goals. Everything saves automatically.
 
-Because the pages load each other with relative paths, opening `index.html` from
-the filesystem will not work. Serve the repository root over HTTP instead:
+---
 
-```bash
-cd .claude/skills/run-personal-dashboard
-node server.mjs        # http://localhost:3000/
-```
+## Privacy
 
-### Deploying
-
-Push to `main` and GitHub Pages serves the repository root. The Supabase schema
-— table, indexes, RLS policies, and Realtime publication — is in
-`supabase/schema.sql`. The project URL and publishable key are in
-`scripts/supabase-config.js`.
+Your data never leaves your Supabase account. The dashboard itself stores nothing—no analytics, no tracking, no third-party cookies. You control the Supabase project; you can export or delete your data at any time.
