@@ -31,6 +31,11 @@ window.supabase = {
           if (authStateChange) authStateChange('SIGNED_OUT', null);
           return { error: null };
         },
+        async setSession(session) {
+          localStorage.setItem('__auth_test_session', JSON.stringify(session));
+          if (authStateChange) authStateChange('SIGNED_IN', session);
+          return { data: { session }, error: null };
+        },
         async signUp({ email, password, options }) {
           localStorage.setItem('__auth_test_signup', JSON.stringify({ email, password, options }));
           if (localStorage.getItem('__auth_test_require_confirmation') === 'true') {
@@ -39,15 +44,31 @@ window.supabase = {
           const session = { user: { id: 'password-user', email } };
           localStorage.setItem('__auth_test_session', JSON.stringify(session));
           return { data: { session }, error: null };
-        },
-        async signInWithPassword({ email, password }) {
-          localStorage.setItem('__auth_test_signin', JSON.stringify({ email, password }));
-          if (password !== 'password123') {
-            return { data: { session: null }, error: { message: 'Invalid login credentials' } };
+        }
+      },
+      functions: {
+        async invoke(name, { body }) {
+          localStorage.setItem('__auth_test_signin', JSON.stringify({ name, ...body }));
+          const signup = JSON.parse(localStorage.getItem('__auth_test_signup') || 'null');
+          const validUsername = signup?.options?.data?.username;
+          if (!signup || (body.username !== validUsername && body.username !== signup.email) ||
+              body.password !== signup.password) {
+            return { data: null, error: { message: 'Invalid username or password.' } };
           }
-          const session = { user: { id: 'password-user', email } };
-          localStorage.setItem('__auth_test_session', JSON.stringify(session));
-          return { data: { session }, error: null };
+          return {
+            data: {
+              session: {
+                user: {
+                  id: 'password-user',
+                  email: signup.email,
+                  user_metadata: signup.options.data
+                },
+                access_token: 'mock-access-token',
+                refresh_token: 'mock-refresh-token'
+              }
+            },
+            error: null
+          };
         }
       },
       from() {
@@ -97,9 +118,11 @@ try {
   await page.goto(`http://localhost:${port}/pages/tasks.html`);
 
   assert.equal(await page.locator('#cloud-password').count(), 1, 'password auth should show a password field');
+  assert.equal(await page.locator('#cloud-login-username').count(), 1, 'sign-in should show a username field');
+  assert.equal(await page.locator('#cloud-email').count(), 0, 'sign-in should not require an email field');
   assert.equal(await page.locator('#cloud-otp-form').count(), 0, 'password auth should not show an OTP form');
   assert.equal(await page.locator('#cloud-signup').textContent(), 'Sign up', 'signup action should be clearly labelled');
-  assert.match(await page.locator('.cloud-auth-description').textContent(), /sign in with your email and password/i);
+  assert.match(await page.locator('.cloud-auth-description').textContent(), /sign in with your username and password/i);
   await page.locator('#cloud-signup').click();
   assert.match(await page.locator('.cloud-auth-description').textContent(),
     /first name, last name, username, email, and password/i);
@@ -115,8 +138,8 @@ try {
   await page.locator('#cloud-email').fill('person@gmail.com');
   await page.locator('#cloud-password').fill('password123');
   await page.locator('#cloud-back-to-signin').click();
-  assert.equal(await page.locator('#cloud-email').inputValue(), 'person@gmail.com',
-    'switching to sign-in should preserve email');
+  assert.equal(await page.locator('#cloud-login-username').inputValue(), 'person@gmail.com',
+    'switching to sign-in should preserve the previous login identifier');
   assert.equal(await page.locator('#cloud-password').inputValue(), 'password123',
     'switching to sign-in should preserve password');
   await page.locator('#cloud-signup').click();
@@ -151,16 +174,29 @@ try {
   await page.locator('#cloud-account-control .cloud-signout').click();
   await page.waitForTimeout(100);
   assert.equal(await page.locator('#cloud-auth-form').count(), 1, 'sign-out should return to the password form');
-  await page.locator('#cloud-email').fill('person@gmail.com');
+  await page.locator('#cloud-login-username').fill('ada_codes');
   await page.locator('#cloud-password').fill('wrongpass');
   await page.locator('#cloud-auth-form').locator('button[type="submit"]').click();
-  await page.getByText('Invalid login credentials').waitFor();
+  await page.getByText('Invalid username or password.').waitFor();
+  assert.equal(await page.locator('#cloud-login-username').inputValue(), 'ada_codes',
+    'failed username sign-in should preserve the entered username');
   await page.locator('#cloud-password').fill('password123');
   await page.locator('#cloud-auth-form').locator('button[type="submit"]').click();
   await page.locator('#cloud-account-control').waitFor();
   const signin = await page.evaluate(() => JSON.parse(localStorage.getItem('__auth_test_signin')));
-  assert.equal(signin.email, 'person@gmail.com');
+  assert.equal(signin.name, 'sign-in-with-username');
+  assert.equal(signin.username, 'ada_codes');
   assert.equal(signin.password, 'password123');
+
+  await page.locator('#cloud-account-control .cloud-signout').click();
+  await page.locator('#cloud-login-username').waitFor();
+  await page.locator('#cloud-login-username').fill('person@gmail.com');
+  await page.locator('#cloud-password').fill('password123');
+  await page.locator('#cloud-auth-form').locator('button[type="submit"]').click();
+  await page.locator('#cloud-account-control').waitFor();
+  const legacySignin = await page.evaluate(() => JSON.parse(localStorage.getItem('__auth_test_signin')));
+  assert.equal(legacySignin.username, 'person@gmail.com',
+    'existing accounts should be able to use their email to sign in and add a username');
 
   await page.evaluate(() => localStorage.setItem('__auth_test_delay', '700'));
   await page.goto(`http://localhost:${port}/pages/tasks.html`);
@@ -184,14 +220,14 @@ try {
   assert.equal(await page.locator('#cloud-signin').count(), 1);
 
   await page.goto(`http://localhost:${port}/pages/notes.html?new=1`);
-  await page.locator('#cloud-email').fill('person@gmail.com');
+  await page.locator('#cloud-login-username').fill('ada_codes');
   await page.locator('#cloud-password').fill('password123');
   await page.locator('#cloud-auth-form').locator('button[type="submit"]').click();
   await page.locator('#noteFormPanel.is-visible').waitFor();
   assert.equal(await page.title(), 'Dashboard — Notes', 'sign-in from the Home Quick Note flow should return to Notes');
   assert.equal(await page.locator('#noteTitle').isVisible(), true, 'sign-in should reveal the requested new note form');
 
-  console.log('Auth tests passed: password signup, email-confirmation guidance, invalid-password feedback, sign-in, Home landing, returning-user navigation, and the new-note return route.');
+  console.log('Auth tests passed: password signup, email-confirmation guidance, username sign-in, invalid-credential feedback, Home landing, returning-user navigation, and the new-note return route.');
 } finally {
   if (browser) await browser.close();
   server.kill();

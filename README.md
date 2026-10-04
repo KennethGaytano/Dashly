@@ -46,6 +46,23 @@ Dashly is a lightweight, offline-first dashboard for personal productivity. It r
 
 ---
 
+## Sign in with a username
+
+After creating an account, sign in with your username and password. Existing
+accounts can use their email address in the Username field once, then open
+Account settings to add a username; after that they can sign in with it.
+
+Username sign-in uses the `sign-in-with-username` Supabase Edge Function to
+look up the account privately and returns a session only after the password is
+verified. Deploy it to the project:
+
+```bash
+npx supabase functions deploy sign-in-with-username --project-ref zdmbbdxynpmhmuvqlzjf
+npx supabase functions deploy delete-account --project-ref zdmbbdxynpmhmuvqlzjf
+```
+
+---
+
 ## Privacy
 
 Your data never leaves your Supabase account. The dashboard itself stores nothing—no analytics, no tracking, no third-party cookies. You control the Supabase project; you can export or delete your data at any time.

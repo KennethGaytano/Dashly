@@ -172,7 +172,7 @@ Personal_DashBoard/
     ├── server.mjs          # HTTP server for serving static files
     ├── driver.mjs          # Interactive Playwright driver
     ├── smoke.mjs           # Cross-page smoke test
-    ├── auth-tests.mjs      # Password sign-up, sign-in, and confirmation-setting tests
+    ├── auth-tests.mjs      # Password sign-up, username sign-in, and confirmation-setting tests
     ├── theme-tests.mjs     # System appearance defaults and saved theme preference
     ├── task-tests.mjs      # Task management test suite
     ├── goals-tests.mjs     # Goals test suite
@@ -373,7 +373,7 @@ console.log('Checkbox persisted:', isChecked);
 ## Summary
 
 - **Smoke test:** `cd .claude/skills/run-personal-dashboard && node smoke.mjs`
-- **Auth:** `node auth-tests.mjs` — password sign-in/sign-up, required first/last name and username metadata, confirmation guidance, and saved return routes
+- **Auth:** `node auth-tests.mjs` — password sign-up, username sign-in, required first/last name and username metadata, confirmation guidance, and saved return routes
 - **Account settings:** `node account-settings-tests.mjs` — profile updates, account switching, deletion confirmation, and local sign-out
 - **Theme preference:** `node theme-tests.mjs` — system light/dark defaults and saved choice
 - **Behaviour suites:** `node task-tests.mjs`, `node goals-tests.mjs`, `node notes-tests.mjs`, `node progress-tests.mjs`, `node calendar-tests.mjs` — run one at a time, they all bind port 3000

@@ -76,7 +76,7 @@
     root.querySelector('.cloud-loading-message').textContent = message;
   }
 
-  function renderAuthForm(section, email, message, password, firstName, lastName, username, mode) {
+  function renderAuthForm(section, identifier, message, password, firstName, lastName, username, mode) {
     const isSignup = mode === 'signup';
     const nameFields = isSignup
       ? [
@@ -91,13 +91,15 @@
       '<h1 id="cloud-auth-title">Your dashboard, synced</h1>',
       '<p class="cloud-auth-description">' + (isSignup
         ? 'Sign up with your first name, last name, username, email, and password.'
-        : 'Sign in with your email and password, or sign up for a new account.') + '</p>',
+        : 'Sign in with your username and password, or sign up for a new account.') + '</p>',
       '<form id="cloud-auth-form">',
       nameFields,
       isSignup
         ? '<label for="cloud-username">Username</label><input id="cloud-username" name="username" type="text" autocomplete="username" autocapitalize="none" maxlength="32" required>'
         : '',
-      '<label for="cloud-email">Email</label><input id="cloud-email" name="email" type="email" autocomplete="email" required>',
+      isSignup
+        ? '<label for="cloud-email">Email</label><input id="cloud-email" name="email" type="email" autocomplete="email" required>'
+        : '<label for="cloud-login-username">Username</label><input id="cloud-login-username" name="username" type="text" autocomplete="username" autocapitalize="none" maxlength="320" required>',
       '<label for="cloud-password">Password</label><input id="cloud-password" name="password" type="password" autocomplete="' + (isSignup ? 'new-password' : 'current-password') + '" minlength="8" required>',
       '<p id="cloud-auth-message" class="cloud-auth-message" role="status" aria-live="polite"></p>',
       isSignup
@@ -106,12 +108,13 @@
       '</form>'
     ].join('');
     const form = section.querySelector('#cloud-auth-form');
+    const identifierInput = section.querySelector(isSignup ? '#cloud-email' : '#cloud-login-username');
     const emailInput = section.querySelector('#cloud-email');
     const passwordInput = section.querySelector('#cloud-password');
     const firstNameInput = section.querySelector('#cloud-first-name');
     const lastNameInput = section.querySelector('#cloud-last-name');
     const usernameInput = section.querySelector('#cloud-username');
-    if (email) emailInput.value = email;
+    if (identifier) identifierInput.value = identifier;
     if (password) passwordInput.value = password;
     if (firstNameInput && firstName) firstNameInput.value = firstName;
     if (lastNameInput && lastName) lastNameInput.value = lastName;
@@ -122,7 +125,7 @@
       signupButton.addEventListener('click', () => {
         renderAuthForm(
           section,
-          emailInput.value,
+          identifierInput.value,
           '',
           passwordInput.value,
           firstNameInput ? firstNameInput.value : firstName,
@@ -137,7 +140,7 @@
       backButton.addEventListener('click', () => {
         renderAuthForm(
           section,
-          emailInput.value,
+          identifierInput.value,
           '',
           passwordInput.value,
           firstNameInput.value,
@@ -150,9 +153,9 @@
       event.preventDefault();
       submitAuth(isSignup ? 'signup' : 'signin');
     });
-    if (!email) {
+    if (!identifier) {
       if (isSignup && firstNameInput) firstNameInput.focus();
-      else emailInput.focus();
+      else identifierInput.focus();
     } else if (isSignup && firstNameInput) firstNameInput.focus();
     else passwordInput.focus();
   }
@@ -181,7 +184,7 @@
     const root = document.getElementById('cloud-auth-root');
     if (!root) return;
     const section = root.querySelector('.cloud-auth-card');
-    const email = section.querySelector('#cloud-email').value.trim();
+    const identifier = section.querySelector(mode === 'signup' ? '#cloud-email' : '#cloud-login-username').value.trim();
     const password = section.querySelector('#cloud-password').value;
     const firstNameInput = section.querySelector('#cloud-first-name');
     const lastNameInput = section.querySelector('#cloud-last-name');
@@ -202,7 +205,7 @@
     try {
       const result = mode === 'signup'
         ? await client.auth.signUp({
-            email,
+            email: identifier,
             password,
             options: {
               data: {
@@ -213,7 +216,16 @@
               }
             }
           })
-        : await client.auth.signInWithPassword({ email, password });
+        : await (async () => {
+            const { data, error } = await client.functions.invoke('sign-in-with-username', {
+              body: { username: identifier, password }
+            });
+            if (error) throw error;
+            if (!data || !data.session) {
+              throw new Error('Sign-in did not return a session. Check your username and password, then try again.');
+            }
+            return client.auth.setSession(data.session);
+          })();
       if (result.error) throw result.error;
       if (mode === 'signup' && !result.data.session) {
         throw new Error('Account creation still requires email confirmation. In Supabase, turn off Authentication → Sign In / Providers → Email → Confirm email, then create the account again.');
@@ -226,8 +238,10 @@
     } catch (error) {
       const message = mode === 'signin' && /email not confirmed/i.test(error.message || '')
         ? 'This account is still marked as unconfirmed in Supabase. Disable Confirm email for new accounts; an existing unconfirmed account may need to be confirmed in Supabase or recreated.'
-        : error.message || (mode === 'signup' ? 'Could not create your account. Try again.' : 'Could not sign in. Check your email and password.');
-      renderAuthForm(section, email, message, password, firstName, lastName, username, mode);
+        : mode === 'signin'
+          ? error.message || 'Could not sign in. Check your username and password.'
+          : error.message || 'Could not create your account. Try again.';
+      renderAuthForm(section, identifier, message, password, firstName, lastName, username, mode);
     }
   }
 
