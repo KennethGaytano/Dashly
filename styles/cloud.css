@@ -6,6 +6,15 @@
     overflow: hidden;
 }
 
+.cloud-locked {
+    overflow: hidden;
+    scrollbar-width: none;
+}
+
+.cloud-locked::-webkit-scrollbar {
+    display: none;
+}
+
 #cloud-auth-root {
     position: fixed;
     inset: 0;
@@ -229,6 +238,11 @@
     gap: 0.65rem;
 }
 
+.cloud-settings-username {
+    display: grid;
+    gap: 0.65rem;
+}
+
 .cloud-profile-fields {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -321,7 +335,8 @@
 
 @media (max-width: 767px) {
     .cloud-account-control {
-        margin: auto 0.75rem 0;
+        order: 1;
+        margin: 0.75rem;
         padding: 0.5rem;
         font-size: 0.68rem;
     }

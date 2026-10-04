@@ -581,7 +581,7 @@
     dialog.setAttribute('aria-labelledby', 'cloud-settings-title');
     dialog.innerHTML = [
       '<header class="cloud-settings-header">',
-      '<div><h2 id="cloud-settings-title">Account settings</h2><p>Update the name saved to your Dashly account.</p></div>',
+      '<div><h2 id="cloud-settings-title">Account settings</h2><p>Update the profile details saved to your Dashly account.</p></div>',
       '<button type="button" class="cloud-settings-close" aria-label="Close account settings">×</button>',
       '</header>',
       '<form class="cloud-profile-form">',
@@ -589,6 +589,7 @@
       '<div><label for="cloud-settings-first-name">First name</label><input id="cloud-settings-first-name" name="first_name" type="text" autocomplete="given-name" maxlength="80" required></div>',
       '<div><label for="cloud-settings-last-name">Last name</label><input id="cloud-settings-last-name" name="last_name" type="text" autocomplete="family-name" maxlength="80" required></div>',
       '</div>',
+      '<div class="cloud-settings-username"><label for="cloud-settings-username">Username</label><input id="cloud-settings-username" name="username" type="text" autocomplete="username" autocapitalize="none" maxlength="32" required></div>',
       '<p class="cloud-settings-status" role="status" aria-live="polite"></p>',
       '<button type="submit" class="btn btn-primary cloud-settings-save">Save name</button>',
       '</form>',
@@ -610,6 +611,7 @@
     const metadata = user.user_metadata || {};
     const firstName = dialog.querySelector('#cloud-settings-first-name');
     const lastName = dialog.querySelector('#cloud-settings-last-name');
+    const username = dialog.querySelector('#cloud-settings-username');
     const profileForm = dialog.querySelector('.cloud-profile-form');
     const profileStatus = dialog.querySelector('.cloud-settings-status');
     const saveButton = dialog.querySelector('.cloud-settings-save');
@@ -619,6 +621,7 @@
 
     firstName.value = typeof metadata.first_name === 'string' ? metadata.first_name : '';
     lastName.value = typeof metadata.last_name === 'string' ? metadata.last_name : '';
+    username.value = typeof metadata.username === 'string' ? metadata.username : '';
 
     dialog.querySelector('.cloud-settings-close').addEventListener('click', () => dialog.close());
     dialog.addEventListener('click', event => {
@@ -631,13 +634,21 @@
       profileStatus.textContent = 'Saving…';
       const nextFirstName = firstName.value.trim();
       const nextLastName = lastName.value.trim();
+      const nextUsername = username.value.trim();
+      if (!nextFirstName || !nextLastName || !nextUsername) {
+        profileStatus.setAttribute('role', 'alert');
+        profileStatus.textContent = 'Enter your first name, last name, and username.';
+        saveButton.disabled = false;
+        return;
+      }
       try {
         const { data, error } = await client.auth.updateUser({
           data: {
             ...(user.user_metadata || {}),
             first_name: nextFirstName,
             last_name: nextLastName,
-            full_name: [nextFirstName, nextLastName].join(' ')
+            full_name: [nextFirstName, nextLastName].join(' '),
+            username: nextUsername
           }
         });
         if (error) throw error;

@@ -435,6 +435,14 @@ section > h2 {
         transition: transform 0.3s ease;
     }
 
+    .sidebar-logo {
+        order: 0;
+    }
+
+    .sidebar-nav {
+        order: 2;
+    }
+
     body.nav-open aside {
         transform: translateX(0);
     }

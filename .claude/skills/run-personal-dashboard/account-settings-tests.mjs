@@ -110,6 +110,18 @@ try {
   const profilePage = await context.newPage();
   await profilePage.goto(`http://localhost:${port}/pages/tasks.html`);
   await profilePage.locator('#cloud-account-control').waitFor();
+  await profilePage.setViewportSize({ width: 320, height: 568 });
+  await profilePage.locator('.tab-more').click();
+  await profilePage.locator('.cloud-settings-open').waitFor({ state: 'visible' });
+  const settingsButtonBounds = await profilePage.locator('.cloud-settings-open').evaluate(button => {
+    const bounds = button.getBoundingClientRect();
+    return { left: bounds.left, right: bounds.right, top: bounds.top, bottom: bounds.bottom };
+  });
+  assert.ok(
+    settingsButtonBounds.left >= 0 && settingsButtonBounds.right <= 320 &&
+    settingsButtonBounds.top >= 0 && settingsButtonBounds.bottom <= 568,
+    'Settings should be visible inside the drawer on a 320x568 mobile viewport'
+  );
   await profilePage.locator('.cloud-settings-open').click();
   await profilePage.locator('.cloud-settings-dialog').waitFor();
   await profilePage.setViewportSize({ width: 375, height: 812 });
@@ -121,8 +133,10 @@ try {
     'account settings should fit a narrow mobile viewport');
   assert.equal(await profilePage.locator('#cloud-settings-first-name').inputValue(), 'Ada');
   assert.equal(await profilePage.locator('#cloud-settings-last-name').inputValue(), 'Lovelace');
+  assert.equal(await profilePage.locator('#cloud-settings-username').inputValue(), 'ada_codes');
   await profilePage.locator('#cloud-settings-first-name').fill('Grace');
   await profilePage.locator('#cloud-settings-last-name').fill('Hopper');
+  await profilePage.locator('#cloud-settings-username').fill('grace_codes');
   await profilePage.locator('.cloud-profile-form').locator('button[type="submit"]').click();
   await profilePage.getByText('Name saved.').waitFor();
   const savedProfile = await profilePage.evaluate(() =>
@@ -132,13 +146,21 @@ try {
     first_name: 'Grace',
     last_name: 'Hopper',
     full_name: 'Grace Hopper',
-    username: 'ada_codes'
+    username: 'grace_codes'
   }, 'profile updates should save names and preserve other user metadata');
 
   await profilePage.locator('.cloud-settings-switch').click();
   await profilePage.locator('#cloud-auth-form').waitFor();
   assert.equal(await profilePage.locator('#cloud-account-control').count(), 0,
     'switching accounts should sign out and return to the account form');
+  const loginScroll = await profilePage.evaluate(() => ({
+    locked: document.documentElement.classList.contains('cloud-locked'),
+    overflowY: getComputedStyle(document.documentElement).overflowY,
+    scrollbarWidth: getComputedStyle(document.documentElement).scrollbarWidth
+  }));
+  assert.equal(loginScroll.locked, true, 'the login screen should lock document scrolling');
+  assert.equal(loginScroll.overflowY, 'hidden', 'the login screen should hide the document scrollbar');
+  assert.equal(loginScroll.scrollbarWidth, 'none', 'the login screen should suppress scrollbar rendering');
 
   const deletePage = await context.newPage();
   await deletePage.goto(`http://localhost:${port}/pages/tasks.html`);

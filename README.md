@@ -31,7 +31,8 @@ Dashly is a lightweight, offline-first dashboard for personal productivity. It r
 ## How it works
 
 - **Offline-first** — Data lives in your browser for instant reads. Writes sync to Supabase in the background.
-- **Your account, your data** — You sign up with email + password. All records are stored in *your* Supabase project, protected by Row Level Security. No one else can see them.
+- **Your account, your data** — Sign up with your first name, last name, username, email, and password. Profile details are saved with your Supabase account; update your first name, last name, or username later in Account settings. Dashboard records are protected by Row Level Security.
+- **Account settings** — Edit your first name, last name, and username; sign out to create or switch accounts; or permanently delete your account and synced dashboard data.
 - **No installation** — Open the link and start. It works on any modern browser, desktop or mobile.
 
 ---
@@ -39,7 +40,8 @@ Dashly is a lightweight, offline-first dashboard for personal productivity. It r
 ## Get started
 
 1. Open [**Dashly**](https://kennethgaytano.github.io/Dashly/)
-2. Click **Sign up** and create an account with your email and preferred password.
+2. Click **Sign up**, then enter your first name, last name, username, email,
+   and password.
 3. Start adding tasks, events, notes, and goals. Everything saves automatically.
 
 ---
