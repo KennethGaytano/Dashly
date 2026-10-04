@@ -39,7 +39,7 @@ Dashly is a lightweight, offline-first dashboard for personal productivity. It r
 ## Get started
 
 1. Open [**Dashly**](https://kennethgaytano.github.io/Dashly/)
-2. Click **Sign up** and create an account with your email and a password.
+2. Click **Sign up** and create an account with your email and preferred password.
 3. Start adding tasks, events, notes, and goals. Everything saves automatically.
 
 ---
