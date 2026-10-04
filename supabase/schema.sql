@@ -1,5 +1,6 @@
 create table if not exists public.dashboard_records (
   user_id uuid not null references auth.users (id) on delete cascade,
+  username text,
   collection text not null check (
     collection in (
       'tasks',
@@ -20,6 +21,13 @@ create table if not exists public.dashboard_records (
 
 create index if not exists dashboard_records_user_collection_updated_idx
   on public.dashboard_records (user_id, collection, updated_at desc);
+
+alter table public.dashboard_records
+  add column if not exists username text;
+
+create index if not exists dashboard_records_username_idx
+  on public.dashboard_records (username)
+  where username is not null;
 
 alter table public.dashboard_records enable row level security;
 

@@ -17,6 +17,7 @@
   const originalSetItem = Storage.prototype.setItem;
   const originalRemoveItem = Storage.prototype.removeItem;
   let currentUserId = null;
+  let currentUsername = null;
   let changeQueue = Promise.resolve();
   const syncTimers = new Map();
   let realtimeChannel = null;
@@ -269,6 +270,7 @@
   function rowFor(collection, item) {
     return {
       user_id: currentUserId,
+      username: currentUsername || null,
       collection,
       record_id: collection === 'pomodoro_state' ? 'current' : String(item.id),
       data: item,
@@ -291,6 +293,27 @@
       .eq('user_id', currentUserId);
     if (error) throw error;
     return data;
+  }
+
+  async function backfillUsername(previousUsername) {
+    if (!currentUsername) return;
+    let query = client.from('dashboard_records')
+      .update({ username: currentUsername })
+      .eq('user_id', currentUserId)
+      .is('username', null);
+    if (previousUsername) {
+      const { error: renameError } = await client.from('dashboard_records')
+        .update({ username: currentUsername })
+        .eq('user_id', currentUserId)
+        .eq('username', previousUsername);
+      if (renameError) {
+        console.warn('Could not update the username on cloud records after a rename.', renameError);
+      }
+    }
+    const { error } = await query;
+    if (error) {
+      console.warn('Could not fill in the username on existing cloud records.', error);
+    }
   }
 
   function setLocal(key, value) {
@@ -536,10 +559,15 @@
 
   async function loadUser(user) {
     currentUserId = user.id;
+    const metadata = user.user_metadata || {};
+    currentUsername = typeof metadata.username === 'string' && metadata.username
+      ? metadata.username
+      : null;
     const previousUser = originalGetItem.call(localStorage, USER_MARKER);
     if (previousUser !== user.id) showLoading('Loading your synced dashboard…');
     try {
       let records = await fetchAllCollections();
+      await backfillUsername();
       if (previousUser !== user.id) {
         Object.values(STORAGE_KEYS).forEach(key => originalRemoveItem.call(localStorage, key));
         originalRemoveItem.call(localStorage, PENDING_KEY);
@@ -642,6 +670,7 @@
         return;
       }
       try {
+        const previousUsername = currentUsername;
         const { data, error } = await client.auth.updateUser({
           data: {
             ...(user.user_metadata || {}),
@@ -654,6 +683,8 @@
         if (error) throw error;
         if (!data.user) throw new Error('Supabase did not return the updated account profile.');
         user = data.user;
+        currentUsername = nextUsername;
+        if (previousUsername !== nextUsername) await backfillUsername(previousUsername);
         profileStatus.textContent = 'Name saved.';
       } catch (error) {
         console.error('Could not update the account profile.', error);
@@ -838,6 +869,7 @@
       if (event === 'SIGNED_OUT') {
         initialSync = false;
         currentUserId = null;
+        currentUsername = null;
         setTimeout(() => {
           Object.values(STORAGE_KEYS).forEach(key => originalRemoveItem.call(localStorage, key));
           originalRemoveItem.call(localStorage, USER_MARKER);
