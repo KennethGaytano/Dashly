@@ -373,7 +373,8 @@ console.log('Checkbox persisted:', isChecked);
 ## Summary
 
 - **Smoke test:** `cd .claude/skills/run-personal-dashboard && node smoke.mjs`
-- **Auth confirmation:** `node auth-tests.mjs`
+- **Auth:** `node auth-tests.mjs` — password sign-in/sign-up, required first/last name and username metadata, confirmation guidance, and saved return routes
+- **Account settings:** `node account-settings-tests.mjs` — profile updates, account switching, deletion confirmation, and local sign-out
 - **Theme preference:** `node theme-tests.mjs` — system light/dark defaults and saved choice
 - **Behaviour suites:** `node task-tests.mjs`, `node goals-tests.mjs`, `node notes-tests.mjs`, `node progress-tests.mjs`, `node calendar-tests.mjs` — run one at a time, they all bind port 3000
 - **Form popups:** `node form-disclosure-tests.mjs` — open/close, keyboard, and focus behavior across all five form pages, plus the Home Quick Note flow

@@ -51,7 +51,7 @@
     const signinButton = root.querySelector('#cloud-signin');
     if (signinButton) signinButton.textContent = busy ? 'Connecting…' : 'Sign in';
     const signupButton = root.querySelector('#cloud-signup');
-    if (signupButton) signupButton.textContent = busy ? 'Creating…' : 'Create account';
+    if (signupButton) signupButton.textContent = busy ? 'Signing up…' : 'Sign up';
   }
 
   function showLoading(message) {
@@ -74,33 +74,84 @@
     root.querySelector('.cloud-loading-message').textContent = message;
   }
 
-  function renderAuthForm(section, email, message, password) {
+  function renderAuthForm(section, email, message, password, firstName, lastName, username, mode) {
+    const isSignup = mode === 'signup';
+    const nameFields = isSignup
+      ? [
+          '<div class="cloud-auth-name-fields">',
+          '<div><label for="cloud-first-name">First name</label><input id="cloud-first-name" name="firstName" type="text" autocomplete="given-name" maxlength="80" required></div>',
+          '<div><label for="cloud-last-name">Last name</label><input id="cloud-last-name" name="lastName" type="text" autocomplete="family-name" maxlength="80" required></div>',
+          '</div>'
+        ].join('')
+      : '';
     section.innerHTML = [
       '<img src="' + (location.pathname.includes('/pages/') ? '../assets/brand/dashly-logo.svg' : 'assets/brand/dashly-logo.svg') + '" alt="Dashly" class="cloud-auth-logo">',
       '<h1 id="cloud-auth-title">Your dashboard, synced</h1>',
-      '<p class="cloud-auth-description">Sign in or create an account with your email and password.</p>',
+      '<p class="cloud-auth-description">' + (isSignup
+        ? 'Sign up with your first name, last name, username, email, and password.'
+        : 'Sign in with your email and password, or sign up for a new account.') + '</p>',
       '<form id="cloud-auth-form">',
+      nameFields,
+      isSignup
+        ? '<label for="cloud-username">Username</label><input id="cloud-username" name="username" type="text" autocomplete="username" autocapitalize="none" maxlength="32" required>'
+        : '',
       '<label for="cloud-email">Email</label><input id="cloud-email" name="email" type="email" autocomplete="email" required>',
-      '<label for="cloud-password">Password</label><input id="cloud-password" name="password" type="password" autocomplete="current-password" minlength="8" required>',
+      '<label for="cloud-password">Password</label><input id="cloud-password" name="password" type="password" autocomplete="' + (isSignup ? 'new-password' : 'current-password') + '" minlength="8" required>',
       '<p id="cloud-auth-message" class="cloud-auth-message" role="status" aria-live="polite"></p>',
-      '<button id="cloud-signin" class="btn btn-primary" type="submit">Sign in</button>',
-      '<button id="cloud-signup" class="btn btn-secondary" type="button">Create account</button>',
+      isSignup
+        ? '<button id="cloud-create-account" class="btn btn-primary" type="submit">Create account</button><button id="cloud-back-to-signin" class="btn btn-secondary" type="button">Back to sign in</button>'
+        : '<button id="cloud-signin" class="btn btn-primary" type="submit">Sign in</button><button id="cloud-signup" class="btn btn-secondary" type="button">Sign up</button>',
       '</form>'
     ].join('');
     const form = section.querySelector('#cloud-auth-form');
     const emailInput = section.querySelector('#cloud-email');
     const passwordInput = section.querySelector('#cloud-password');
+    const firstNameInput = section.querySelector('#cloud-first-name');
+    const lastNameInput = section.querySelector('#cloud-last-name');
+    const usernameInput = section.querySelector('#cloud-username');
     if (email) emailInput.value = email;
     if (password) passwordInput.value = password;
+    if (firstNameInput && firstName) firstNameInput.value = firstName;
+    if (lastNameInput && lastName) lastNameInput.value = lastName;
+    if (usernameInput && username) usernameInput.value = username;
     section.querySelector('#cloud-auth-message').textContent = message || '';
-    section.querySelector('#cloud-signup').addEventListener('click', () => {
-      if (form.reportValidity()) submitAuth('signup');
-    });
+    const signupButton = section.querySelector('#cloud-signup');
+    if (signupButton) {
+      signupButton.addEventListener('click', () => {
+        renderAuthForm(
+          section,
+          emailInput.value,
+          '',
+          passwordInput.value,
+          firstNameInput ? firstNameInput.value : firstName,
+          lastNameInput ? lastNameInput.value : lastName,
+          usernameInput ? usernameInput.value : username,
+          'signup'
+        );
+      });
+    }
+    const backButton = section.querySelector('#cloud-back-to-signin');
+    if (backButton) {
+      backButton.addEventListener('click', () => {
+        renderAuthForm(
+          section,
+          emailInput.value,
+          '',
+          passwordInput.value,
+          firstNameInput.value,
+          lastNameInput.value,
+          usernameInput.value
+        );
+      });
+    }
     form.addEventListener('submit', event => {
       event.preventDefault();
-      submitAuth('signin');
+      submitAuth(isSignup ? 'signup' : 'signin');
     });
-    if (!email) emailInput.focus();
+    if (!email) {
+      if (isSignup && firstNameInput) firstNameInput.focus();
+      else emailInput.focus();
+    } else if (isSignup && firstNameInput) firstNameInput.focus();
     else passwordInput.focus();
   }
 
@@ -130,12 +181,36 @@
     const section = root.querySelector('.cloud-auth-card');
     const email = section.querySelector('#cloud-email').value.trim();
     const password = section.querySelector('#cloud-password').value;
+    const firstNameInput = section.querySelector('#cloud-first-name');
+    const lastNameInput = section.querySelector('#cloud-last-name');
+    const usernameInput = section.querySelector('#cloud-username');
+    const firstName = firstNameInput ? firstNameInput.value.trim() : '';
+    const lastName = lastNameInput ? lastNameInput.value.trim() : '';
+    const username = usernameInput ? usernameInput.value.trim() : '';
+    if (mode === 'signup' && (!firstName || !lastName || !username)) {
+      const missingField = !firstName ? firstNameInput : !lastName ? lastNameInput : usernameInput;
+      const message = section.querySelector('#cloud-auth-message');
+      if (message) message.textContent = 'Enter your first name, last name, and username to create an account.';
+      if (missingField) missingField.focus();
+      return;
+    }
     section.querySelectorAll('button, input').forEach(control => { control.disabled = true; });
-    const actionButton = section.querySelector(mode === 'signup' ? '#cloud-signup' : '#cloud-signin');
-    if (actionButton) actionButton.textContent = mode === 'signup' ? 'Creating…' : 'Signing in…';
+    const actionButton = section.querySelector(mode === 'signup' ? '#cloud-create-account' : '#cloud-signin');
+    if (actionButton) actionButton.textContent = mode === 'signup' ? 'Signing up…' : 'Signing in…';
     try {
       const result = mode === 'signup'
-        ? await client.auth.signUp({ email, password })
+        ? await client.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                first_name: firstName,
+                last_name: lastName,
+                full_name: [firstName, lastName].filter(Boolean).join(' '),
+                username
+              }
+            }
+          })
         : await client.auth.signInWithPassword({ email, password });
       if (result.error) throw result.error;
       if (mode === 'signup' && !result.data.session) {
@@ -150,7 +225,7 @@
       const message = mode === 'signin' && /email not confirmed/i.test(error.message || '')
         ? 'This account is still marked as unconfirmed in Supabase. Disable Confirm email for new accounts; an existing unconfirmed account may need to be confirmed in Supabase or recreated.'
         : error.message || (mode === 'signup' ? 'Could not create your account. Try again.' : 'Could not sign in. Check your email and password.');
-      renderAuthForm(section, email, message, password);
+      renderAuthForm(section, email, message, password, firstName, lastName, username, mode);
     }
   }
 
@@ -476,7 +551,7 @@
       initialSync = true;
       hideAuth();
       listenForRemoteChanges();
-      addAccountControl(user.email);
+      addAccountControl(user);
       if (previousUser === user.id) {
         Object.entries(readPendingWrites()).forEach(([collection, entry]) => {
           const key = STORAGE_KEYS[collection];
@@ -500,14 +575,147 @@
     }
   }
 
-  function addAccountControl(email) {
+  function showAccountSettings(user) {
+    const dialog = document.createElement('dialog');
+    dialog.className = 'cloud-settings-dialog';
+    dialog.setAttribute('aria-labelledby', 'cloud-settings-title');
+    dialog.innerHTML = [
+      '<header class="cloud-settings-header">',
+      '<div><h2 id="cloud-settings-title">Account settings</h2><p>Update the name saved to your Dashly account.</p></div>',
+      '<button type="button" class="cloud-settings-close" aria-label="Close account settings">×</button>',
+      '</header>',
+      '<form class="cloud-profile-form">',
+      '<div class="cloud-profile-fields">',
+      '<div><label for="cloud-settings-first-name">First name</label><input id="cloud-settings-first-name" name="first_name" type="text" autocomplete="given-name" maxlength="80" required></div>',
+      '<div><label for="cloud-settings-last-name">Last name</label><input id="cloud-settings-last-name" name="last_name" type="text" autocomplete="family-name" maxlength="80" required></div>',
+      '</div>',
+      '<p class="cloud-settings-status" role="status" aria-live="polite"></p>',
+      '<button type="submit" class="btn btn-primary cloud-settings-save">Save name</button>',
+      '</form>',
+      '<section class="cloud-settings-account" aria-labelledby="cloud-settings-switch-title">',
+      '<h3 id="cloud-settings-switch-title">Use another account</h3>',
+      '<p>Sign out to sign in with another account or create a new one. Your synced data stays with its account.</p>',
+      '<button type="button" class="btn btn-secondary cloud-settings-switch">Sign out to add or switch account</button>',
+      '</section>',
+      '<section class="cloud-settings-delete" aria-labelledby="cloud-settings-delete-title">',
+      '<h3 id="cloud-settings-delete-title">Delete this account</h3>',
+      '<p>This permanently deletes your Dashly account and all synced dashboard data. This cannot be undone.</p>',
+      '<label for="cloud-settings-delete-confirm">Type DELETE to confirm</label>',
+      '<input id="cloud-settings-delete-confirm" type="text" autocomplete="off" spellcheck="false">',
+      '<p class="cloud-settings-delete-status" role="status" aria-live="polite"></p>',
+      '<button type="button" class="btn btn-danger cloud-settings-delete-button">Delete account and data</button>',
+      '</section>'
+    ].join('');
+
+    const metadata = user.user_metadata || {};
+    const firstName = dialog.querySelector('#cloud-settings-first-name');
+    const lastName = dialog.querySelector('#cloud-settings-last-name');
+    const profileForm = dialog.querySelector('.cloud-profile-form');
+    const profileStatus = dialog.querySelector('.cloud-settings-status');
+    const saveButton = dialog.querySelector('.cloud-settings-save');
+    const deleteConfirmation = dialog.querySelector('#cloud-settings-delete-confirm');
+    const deleteStatus = dialog.querySelector('.cloud-settings-delete-status');
+    const deleteButton = dialog.querySelector('.cloud-settings-delete-button');
+
+    firstName.value = typeof metadata.first_name === 'string' ? metadata.first_name : '';
+    lastName.value = typeof metadata.last_name === 'string' ? metadata.last_name : '';
+
+    dialog.querySelector('.cloud-settings-close').addEventListener('click', () => dialog.close());
+    dialog.addEventListener('click', event => {
+      if (event.target === dialog) dialog.close();
+    });
+    profileForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      saveButton.disabled = true;
+      profileStatus.setAttribute('role', 'status');
+      profileStatus.textContent = 'Saving…';
+      const nextFirstName = firstName.value.trim();
+      const nextLastName = lastName.value.trim();
+      try {
+        const { data, error } = await client.auth.updateUser({
+          data: {
+            ...(user.user_metadata || {}),
+            first_name: nextFirstName,
+            last_name: nextLastName,
+            full_name: [nextFirstName, nextLastName].join(' ')
+          }
+        });
+        if (error) throw error;
+        if (!data.user) throw new Error('Supabase did not return the updated account profile.');
+        user = data.user;
+        profileStatus.textContent = 'Name saved.';
+      } catch (error) {
+        console.error('Could not update the account profile.', error);
+        profileStatus.setAttribute('role', 'alert');
+        profileStatus.textContent = error.message || 'Could not save your name. Try again.';
+      } finally {
+        saveButton.disabled = false;
+      }
+    });
+    dialog.querySelector('.cloud-settings-switch').addEventListener('click', async event => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      button.textContent = 'Signing out…';
+      try {
+        await flushPendingWrites();
+        initialSync = false;
+        if (realtimeChannel) await client.removeChannel(realtimeChannel);
+        const { error } = await client.auth.signOut();
+        if (error) throw error;
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = 'Sign out to add or switch account';
+        console.error('Could not safely switch accounts.', error);
+        profileStatus.setAttribute('role', 'alert');
+        profileStatus.textContent = error.message || 'Could not sign out. Try again.';
+      }
+    });
+    deleteButton.addEventListener('click', async () => {
+      if (deleteConfirmation.value !== 'DELETE') {
+        deleteStatus.setAttribute('role', 'alert');
+        deleteStatus.textContent = 'Type DELETE exactly to confirm account deletion.';
+        deleteConfirmation.focus();
+        return;
+      }
+      deleteButton.disabled = true;
+      deleteConfirmation.disabled = true;
+      deleteStatus.setAttribute('role', 'status');
+      deleteStatus.textContent = 'Deleting your account and synced data…';
+      try {
+        const { error } = await client.functions.invoke('delete-account', { body: {} });
+        if (error) throw error;
+        const { error: signOutError } = await client.auth.signOut({ scope: 'local' });
+        if (signOutError) throw signOutError;
+      } catch (error) {
+        deleteButton.disabled = false;
+        deleteConfirmation.disabled = false;
+        console.error('Could not delete the Dashly account.', error);
+        deleteStatus.setAttribute('role', 'alert');
+        deleteStatus.textContent = error.message || 'Could not delete the account. Try again.';
+      }
+    });
+
+    document.body.appendChild(dialog);
+    dialog.addEventListener('close', () => dialog.remove(), { once: true });
+    dialog.showModal();
+    firstName.focus();
+  }
+
+  function addAccountControl(user) {
     const existing = document.getElementById('cloud-account-control');
     if (existing) existing.remove();
     const control = document.createElement('div');
     control.id = 'cloud-account-control';
     control.className = 'cloud-account-control';
-    control.innerHTML = '<span class="cloud-account-email"></span><button type="button" class="cloud-signout">Sign out</button>';
-    control.querySelector('.cloud-account-email').textContent = email || 'Signed in';
+    control.innerHTML = [
+      '<span class="cloud-account-email"></span>',
+      '<div class="cloud-account-actions">',
+      '<button type="button" class="cloud-settings-open">Settings</button>',
+      '<button type="button" class="cloud-signout">Sign out</button>',
+      '</div>'
+    ].join('');
+    control.querySelector('.cloud-account-email').textContent = user.email || 'Signed in';
+    control.querySelector('.cloud-settings-open').addEventListener('click', () => showAccountSettings(user));
     control.querySelector('.cloud-signout').addEventListener('click', async () => {
       const button = control.querySelector('.cloud-signout');
       button.disabled = true;

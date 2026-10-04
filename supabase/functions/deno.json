@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "lib": ["deno.ns", "deno.unstable", "dom", "dom.iterable", "esnext"]
+  },
+  "exclude": ["editor-shims", "tsconfig.json"]
+}

@@ -31,8 +31,8 @@ window.supabase = {
           if (authStateChange) authStateChange('SIGNED_OUT', null);
           return { error: null };
         },
-        async signUp({ email, password }) {
-          localStorage.setItem('__auth_test_signup', JSON.stringify({ email, password }));
+        async signUp({ email, password, options }) {
+          localStorage.setItem('__auth_test_signup', JSON.stringify({ email, password, options }));
           if (localStorage.getItem('__auth_test_require_confirmation') === 'true') {
             return { data: { user: { id: 'password-user', email }, session: null }, error: null };
           }
@@ -98,20 +98,55 @@ try {
 
   assert.equal(await page.locator('#cloud-password').count(), 1, 'password auth should show a password field');
   assert.equal(await page.locator('#cloud-otp-form').count(), 0, 'password auth should not show an OTP form');
+  assert.equal(await page.locator('#cloud-signup').textContent(), 'Sign up', 'signup action should be clearly labelled');
+  assert.match(await page.locator('.cloud-auth-description').textContent(), /sign in with your email and password/i);
+  await page.locator('#cloud-signup').click();
+  assert.match(await page.locator('.cloud-auth-description').textContent(),
+    /first name, last name, username, email, and password/i);
+  for (const field of ['#cloud-first-name', '#cloud-last-name', '#cloud-username']) {
+    assert.equal(await page.locator(field).isVisible(), true, `${field} should be shown during signup`);
+    assert.equal(await page.locator(field).getAttribute('required'), '', `${field} should be required`);
+  }
+  assert.equal(await page.locator('#cloud-create-account').textContent(), 'Create account');
+  assert.equal(await page.locator('#cloud-back-to-signin').isVisible(), true, 'signup mode should offer a way back to sign in');
+  await page.locator('#cloud-first-name').fill('Ada');
+  await page.locator('#cloud-last-name').fill('Lovelace');
+  await page.locator('#cloud-username').fill('ada_codes');
   await page.locator('#cloud-email').fill('person@gmail.com');
   await page.locator('#cloud-password').fill('password123');
-  await page.evaluate(() => localStorage.setItem('__auth_test_require_confirmation', 'true'));
+  await page.locator('#cloud-back-to-signin').click();
+  assert.equal(await page.locator('#cloud-email').inputValue(), 'person@gmail.com',
+    'switching to sign-in should preserve email');
+  assert.equal(await page.locator('#cloud-password').inputValue(), 'password123',
+    'switching to sign-in should preserve password');
   await page.locator('#cloud-signup').click();
+  assert.equal(await page.locator('#cloud-first-name').inputValue(), 'Ada',
+    'switching back to signup should preserve first name');
+  assert.equal(await page.locator('#cloud-last-name').inputValue(), 'Lovelace',
+    'switching back to signup should preserve last name');
+  assert.equal(await page.locator('#cloud-username').inputValue(), 'ada_codes',
+    'switching back to signup should preserve username');
+  await page.evaluate(() => localStorage.setItem('__auth_test_require_confirmation', 'true'));
+  await page.locator('#cloud-create-account').click();
   await page.getByText(/Account creation still requires email confirmation/).waitFor();
   assert.equal(await page.locator('#cloud-otp-form').count(), 0, 'confirmation notice should not redirect users to OTP');
+  assert.equal(await page.locator('#cloud-first-name').inputValue(), 'Ada', 'signup error should preserve first name');
+  assert.equal(await page.locator('#cloud-last-name').inputValue(), 'Lovelace', 'signup error should preserve last name');
+  assert.equal(await page.locator('#cloud-username').inputValue(), 'ada_codes', 'signup error should preserve username');
   await page.evaluate(() => localStorage.removeItem('__auth_test_require_confirmation'));
-  await page.locator('#cloud-signup').click();
+  await page.locator('#cloud-create-account').click();
   await page.waitForURL('**/index.html');
   assert.equal(await page.title(), 'Dashboard — Home', 'successful signup from a feature page should land on Home');
   assert.equal(await page.locator('#cloud-auth-root').count(), 0, 'successful signup should close the auth screen');
   const signup = await page.evaluate(() => JSON.parse(localStorage.getItem('__auth_test_signup')));
   assert.equal(signup.email, 'person@gmail.com');
   assert.equal(signup.password, 'password123');
+  assert.deepEqual(signup.options.data, {
+    first_name: 'Ada',
+    last_name: 'Lovelace',
+    full_name: 'Ada Lovelace',
+    username: 'ada_codes'
+  }, 'signup should store the name and username as Supabase user metadata');
 
   await page.locator('#cloud-account-control .cloud-signout').click();
   await page.waitForTimeout(100);

@@ -28,34 +28,66 @@ grant select, insert, update, delete
   on public.dashboard_records to authenticated;
 revoke all on public.dashboard_records from anon;
 
+create or replace function public.dashly_current_user_exists()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $function$
+  select exists (
+    select 1
+    from auth.users
+    where id = (select auth.uid())
+  );
+$function$;
+
+revoke all on function public.dashly_current_user_exists() from public;
+grant execute on function public.dashly_current_user_exists() to authenticated;
+
 drop policy if exists "Users can read their own dashboard records"
   on public.dashboard_records;
 create policy "Users can read their own dashboard records"
   on public.dashboard_records for select
   to authenticated
-  using ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and (select public.dashly_current_user_exists())
+  );
 
 drop policy if exists "Users can create their own dashboard records"
   on public.dashboard_records;
 create policy "Users can create their own dashboard records"
   on public.dashboard_records for insert
   to authenticated
-  with check ((select auth.uid()) = user_id);
+  with check (
+    (select auth.uid()) = user_id
+    and (select public.dashly_current_user_exists())
+  );
 
 drop policy if exists "Users can update their own dashboard records"
   on public.dashboard_records;
 create policy "Users can update their own dashboard records"
   on public.dashboard_records for update
   to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and (select public.dashly_current_user_exists())
+  )
+  with check (
+    (select auth.uid()) = user_id
+    and (select public.dashly_current_user_exists())
+  );
 
 drop policy if exists "Users can delete their own dashboard records"
   on public.dashboard_records;
 create policy "Users can delete their own dashboard records"
   on public.dashboard_records for delete
   to authenticated
-  using ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and (select public.dashly_current_user_exists())
+  );
 
 do $$
 begin

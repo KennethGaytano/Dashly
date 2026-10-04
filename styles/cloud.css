@@ -90,6 +90,17 @@
     gap: 0.65rem;
 }
 
+.cloud-auth-name-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+}
+
+.cloud-auth-name-fields > div {
+    display: grid;
+    gap: 0.65rem;
+}
+
 .cloud-auth-card input {
     width: 100%;
     min-height: 2.8rem;
@@ -113,10 +124,9 @@
 }
 
 .cloud-account-control {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.65rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.4rem;
     margin: auto 0.75rem 0;
     padding: 0.6rem 0.7rem;
     border: 1px solid var(--border);
@@ -130,6 +140,160 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.cloud-account-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.cloud-account-actions button {
+    min-height: 2rem;
+    padding: 0.25rem 0;
+    border: 0;
+    color: var(--accent-light);
+    background: transparent;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.cloud-account-actions button:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
+
+.cloud-settings-dialog {
+    width: min(34rem, calc(100% - 2rem));
+    max-height: min(90vh, 48rem);
+    max-height: min(90dvh, 48rem);
+    margin: auto;
+    padding: 1.5rem;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 40%);
+}
+
+.cloud-settings-dialog::backdrop {
+    background: rgb(0 0 0 / 68%);
+}
+
+.cloud-settings-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.cloud-settings-header h2 {
+    font-size: 1.35rem;
+    line-height: 1.3;
+}
+
+.cloud-settings-header p,
+.cloud-settings-account p,
+.cloud-settings-delete > p {
+    margin-top: 0.35rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.cloud-settings-close {
+    flex: 0 0 auto;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.cloud-settings-close:focus-visible,
+.cloud-settings-dialog button:focus-visible,
+.cloud-settings-dialog input:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.cloud-profile-form,
+.cloud-profile-fields,
+.cloud-profile-fields > div,
+.cloud-settings-delete {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.cloud-profile-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cloud-settings-dialog label {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.cloud-settings-dialog input {
+    width: 100%;
+    min-height: 2.8rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font: inherit;
+}
+
+.cloud-settings-status,
+.cloud-settings-delete-status {
+    min-height: 1.5em;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.cloud-settings-save {
+    justify-self: start;
+}
+
+.cloud-settings-account,
+.cloud-settings-delete {
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+}
+
+.cloud-settings-account h3,
+.cloud-settings-delete h3 {
+    font-size: 1rem;
+}
+
+.cloud-settings-switch {
+    margin-top: 0.85rem;
+}
+
+.cloud-settings-delete h3 {
+    color: var(--danger-text);
+}
+
+.cloud-settings-delete-button {
+    justify-self: start;
+    border: 1px solid var(--danger);
+    color: var(--danger-text);
+    background: transparent;
+}
+
+.cloud-settings-delete-button:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+
+.cloud-settings-delete-button:disabled {
+    cursor: wait;
+    opacity: 0.65;
 }
 
 .cloud-signout {
@@ -174,5 +338,13 @@
 
     .cloud-auth-description {
         margin-bottom: 1rem;
+    }
+
+    .cloud-settings-dialog {
+        padding: 1.15rem;
+    }
+
+    .cloud-profile-fields {
+        grid-template-columns: minmax(0, 1fr);
     }
 }
