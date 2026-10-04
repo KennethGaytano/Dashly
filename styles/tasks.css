@@ -297,7 +297,7 @@ details[hidden],
 
 .task-form input[type="date"],
 .task-form input[type="time"] {
-    color-scheme: dark;
+    color-scheme: light dark;
 }
 
 .task-form input:disabled {
