@@ -143,9 +143,16 @@
 }
 
 .cloud-account-control {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.4rem;
+    display: flex;
+    /* flex: 0 0 auto already stops this row shrinking, which is what keeps it
+       out of the nav's scroll area. max-height: 100% additionally stops it from
+       being pushed past the sidebar's bottom edge on a very short viewport,
+       where `overflow: hidden` on <aside> would otherwise clip it away. */
+    flex: 0 0 auto;
+    max-height: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
     margin: auto 0.75rem 0;
     padding: 0.6rem 0.7rem;
     border: 1px solid var(--border);
@@ -155,11 +162,37 @@
     font-size: 0.75rem;
 }
 
-.cloud-account-email {
+/* The avatar + username is display-only: it identifies the signed-in account
+   but is not a link or a button. No hover background, no focus ring, no cursor
+   change — anything that signals "clickable" would be a lie here. */
+.cloud-account-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-width: 0;
+}
+
+.cloud-account-icon {
+    display: block;
+    flex: 0 0 auto;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+}
+
+.cloud-account-username {
+    min-width: 0;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+/* The account email is shown on the Account settings page, not in a hover
+   tooltip here. The tooltip rules that used to live at this point were removed
+   along with the .cloud-account-email element. */
 
 .cloud-account-actions {
     display: flex;
@@ -168,6 +201,8 @@
 }
 
 .cloud-account-actions button {
+    display: inline-flex;
+    align-items: center;
     min-height: 2rem;
     padding: 0.25rem 0;
     border: 0;
@@ -182,22 +217,32 @@
     opacity: 0.65;
 }
 
-.cloud-settings-dialog {
-    width: min(34rem, calc(100% - 2rem));
-    max-height: min(90vh, 48rem);
-    max-height: min(90dvh, 48rem);
-    margin: auto;
-    padding: 1.5rem;
-    overflow-y: auto;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
+.cloud-account-actions .cloud-signout {
+    justify-content: center;
+    /* Sized to its own label rather than a fixed 5rem. A reserved width here
+       came straight out of the username's space and truncated short names to
+       "ada_c...", while the label is the same on every screen. */
+    min-width: 0;
+    min-height: 44px;
+    padding: 0.3rem 0.6rem;
+    flex: 0 0 auto;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
     background: var(--bg-card);
     color: var(--text-primary);
-    box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 40%);
+    font-weight: 600;
+    white-space: nowrap;
 }
 
-.cloud-settings-dialog::backdrop {
-    background: rgb(0 0 0 / 68%);
+.cloud-account-actions .cloud-signout:hover:not(:disabled) {
+    background: var(--bg-card-hover);
+}
+
+.cloud-settings-page {
+    display: grid;
+    gap: 1rem;
+    width: min(100%, 48rem);
+    margin: 0 auto;
 }
 
 .cloud-settings-header {
@@ -208,9 +253,59 @@
     margin-bottom: 1.25rem;
 }
 
+.cloud-settings-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-width: 0;
+}
+
+.cloud-settings-title-row > div {
+    /* Without this the text column refuses to shrink below its longest word
+       (an email) and pushes the row wider than the page at 320px. */
+    min-width: 0;
+}
+
+.cloud-settings-title-row .cloud-account-icon {
+    width: 3rem;
+    height: 3rem;
+}
+
 .cloud-settings-header h2 {
     font-size: 1.35rem;
     line-height: 1.3;
+}
+
+/* The page's own <header> already renders <h1>Account settings</h1>, so this
+   repeated <h2> used to put two identical headings on screen. The element stays
+   because #cloud-settings-title is the section's aria-labelledby target, but it
+   is hidden visually: the account identity below is what is worth reading. */
+.cloud-settings-heading {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* The account email, shown here now that it no longer lives in a hover
+   tooltip on the sidebar avatar. Promoted above the descriptive line and
+   given the accent colour so it reads as the account identity. */
+/* Scoped as `.cloud-settings-header .cloud-settings-email` on purpose: the
+   generic `.cloud-settings-header p` rule below is more specific than a bare
+   class and was resetting this to the muted body colour. */
+.cloud-settings-header .cloud-settings-email {
+    display: block;
+    margin-top: 0.3rem;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    /* A pasted or unusually long address must not push the header wide. */
+    overflow-wrap: anywhere;
 }
 
 .cloud-settings-header p,
@@ -222,20 +317,8 @@
     line-height: 1.5;
 }
 
-.cloud-settings-close {
-    flex: 0 0 auto;
-    width: 2.5rem;
-    height: 2.5rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--bg-secondary);
-    font-size: 1.5rem;
-    line-height: 1;
-}
-
-.cloud-settings-close:focus-visible,
-.cloud-settings-dialog button:focus-visible,
-.cloud-settings-dialog input:focus-visible {
+.cloud-settings-page button:focus-visible,
+.cloud-settings-page input:focus-visible {
     outline: none;
     box-shadow: var(--focus-ring);
 }
@@ -253,16 +336,26 @@
     gap: 0.65rem;
 }
 
+.cloud-profile-form,
+.cloud-password-section,
+.cloud-settings-account,
+.cloud-settings-delete {
+    padding: 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-card);
+}
+
 .cloud-profile-fields {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.cloud-settings-dialog label {
+.cloud-settings-page label {
     font-size: 0.85rem;
     font-weight: 600;
 }
 
-.cloud-settings-dialog input {
+.cloud-settings-page input {
     width: 100%;
     min-height: 2.8rem;
     padding: 0.65rem 0.75rem;
@@ -285,19 +378,45 @@
 }
 
 .cloud-settings-account,
+.cloud-password-section,
 .cloud-settings-delete {
-    margin-top: 1.5rem;
-    padding-top: 1.25rem;
-    border-top: 1px solid var(--border);
+    display: grid;
+    gap: 0.65rem;
+    margin-bottom: 0;
 }
 
 .cloud-settings-account h3,
+.cloud-password-section h3,
 .cloud-settings-delete h3 {
     font-size: 1rem;
 }
 
-.cloud-settings-switch {
+.cloud-password-section > p {
+    margin-top: 0.35rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.cloud-password-form {
+    display: grid;
+    gap: 0.65rem;
     margin-top: 0.85rem;
+}
+
+.cloud-password-status {
+    min-height: 1.5em;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.cloud-password-save {
+    justify-self: start;
+}
+
+.cloud-settings-switch {
+    justify-self: start;
+    margin-top: 0.25rem;
 }
 
 .cloud-settings-delete h3 {
@@ -345,7 +464,7 @@
 
 @media (max-width: 767px) {
     .cloud-account-control {
-        order: 1;
+        order: 3;
         margin: 0.75rem;
         padding: 0.5rem;
         font-size: 0.68rem;
@@ -357,6 +476,12 @@
         padding: 1.25rem;
     }
 
+    @media (max-width: 600px) {
+        .cloud-settings-switch {
+            width: 100%;
+        }
+    }
+
     .cloud-auth-logo {
         margin-bottom: 1rem;
     }
@@ -365,8 +490,11 @@
         margin-bottom: 1rem;
     }
 
-    .cloud-settings-dialog {
-        padding: 1.15rem;
+    .cloud-profile-form,
+    .cloud-password-section,
+    .cloud-settings-account,
+    .cloud-settings-delete {
+        padding: 1rem;
     }
 
     .cloud-profile-fields {

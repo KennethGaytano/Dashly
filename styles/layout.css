@@ -16,7 +16,7 @@ aside {
     flex-direction: column;
     padding: 1.5rem 0;
     z-index: 500;
-    overflow-y: auto;
+    overflow: hidden;
 }
 
 .sidebar-logo {
@@ -35,12 +35,49 @@ aside {
     height: auto;
 }
 
+/* The sidebar is a fixed-height flex column: logo, scrollable nav, theme
+   toggle, account control. Only the nav is allowed to shrink, so on a very
+   short viewport the three fixed rows together exceed 100dvh and the account
+   control — the row that must never scroll away — is the one pushed off the
+   bottom, where `overflow: hidden` silently clips it. Tighten the fixed rows
+   as the viewport loses height so the account control stays reachable. */
+@media (max-height: 300px) {
+    aside {
+        padding: 0.5rem 0;
+    }
+
+    .sidebar-logo {
+        padding: 0 1.25rem 0.5rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .brand-logo {
+        width: min(100%, 5rem);
+    }
+
+    .theme-toggle--sidebar {
+        margin: 0.35rem 1.25rem;
+    }
+}
+
+/* Below roughly one theme toggle plus the account control there is no height
+   left for a wordmark. Dropping it keeps the sign-out reachable, which is the
+   row that matters; the app bar still carries the logo on mobile. */
+@media (max-height: 200px) {
+    .sidebar-logo {
+        display: none;
+    }
+}
+
 .sidebar-nav {
     display: flex;
     flex-direction: column;
     gap: 2px;
     padding: 0 0.75rem;
-    flex: 1;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .sidebar-nav a {
@@ -433,6 +470,13 @@ section > h2 {
     aside {
         transform: translateX(-100%);
         transition: transform 0.3s ease;
+        /* The account control is the drawer's last row, and the tab bar is fixed
+           across the bottom of the viewport. Without this the row sits under the
+           tab bar and is clipped: 21px of overlap on a plain viewport, and 55px
+           once env(safe-area-inset-bottom) is non-zero on a notched phone, which
+           left barely a sliver of the avatar and Sign out visible. The drawer
+           ends at 100dvh, so the clearance has to be padding, not margin. */
+        padding-bottom: calc(var(--tab-bar-total) + 0.75rem);
     }
 
     .sidebar-logo {

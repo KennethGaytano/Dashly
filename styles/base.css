@@ -81,10 +81,33 @@
 /* ===== Custom scrollbar (all pages) ===== */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 999px; border: 2px solid var(--bg-card); }
-::-webkit-scrollbar-thumb:hover { background: var(--accent-light); }
+::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 999px;
+    border: 2px solid transparent;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+html.is-scrolling::-webkit-scrollbar-thumb,
+html.is-scrolling *::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-color: var(--bg-card);
+}
+html.is-scrolling::-webkit-scrollbar-thumb:hover,
+html.is-scrolling *::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-light);
+}
 ::-webkit-scrollbar-corner { background: transparent; }
-html { scrollbar-width: thin; scrollbar-color: var(--accent) transparent; }
+* { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+html.is-scrolling,
+html.is-scrolling * {
+    scrollbar-color: var(--accent) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    ::-webkit-scrollbar-thumb {
+        transition: none;
+    }
+}
 
 html {
     font-size: 16px;

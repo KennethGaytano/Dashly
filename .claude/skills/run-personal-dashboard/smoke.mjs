@@ -48,6 +48,7 @@ async function runSmokeTest() {
       { name: 'Notes', url: '/pages/notes.html', file: 'notes.png' },
       { name: 'Progress', url: '/pages/progress.html', file: 'progress.png' },
       { name: 'Goals', url: '/pages/goals.html', file: 'goals.png' },
+      { name: 'Account settings', url: '/pages/settings.html', file: 'settings.png' },
     ];
 
     // 3. Test Navigation & Screenshots

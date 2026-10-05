@@ -117,7 +117,7 @@ assert(goalsTab.label === 'More', `active tab on Goals is More ("${goalsTab.labe
 assert(goalsTab.hasCurrent, 'More carries aria-current="page" on Goals');
 
 console.log('\n--- Every page marks exactly one destination ---');
-for (const p of ['index.html', 'pages/tasks.html', 'pages/calendar.html', 'pages/notes.html', 'pages/progress.html', 'pages/goals.html']) {
+for (const p of ['index.html', 'pages/tasks.html', 'pages/calendar.html', 'pages/notes.html', 'pages/progress.html', 'pages/goals.html', 'pages/settings.html']) {
   await page.goto(`${BASE}/${p}`);
   await page.waitForTimeout(300);
   const state = await page.evaluate(() => {
@@ -161,10 +161,38 @@ assert(desktop.appBar === 'none', `app bar hidden on desktop (${desktop.appBar})
 assert(desktop.tabBar === 'none', `tab bar hidden on desktop (${desktop.tabBar})`);
 assert(desktop.bodyDir === 'row', `body is a row on desktop, not stacked (${desktop.bodyDir})`);
 
+console.log('\n--- Scrollbar appears only during scroll activity ---');
+await page.evaluate(() => {
+  document.body.style.minHeight = '200vh';
+  window.scrollTo(0, 0);
+  document.documentElement.classList.remove('is-scrolling');
+});
+await page.waitForTimeout(100);
+const scrollbarIdle = await page.evaluate(() => ({
+  active: document.documentElement.classList.contains('is-scrolling'),
+  color: getComputedStyle(document.documentElement).scrollbarColor,
+  thumb: getComputedStyle(document.documentElement, '::-webkit-scrollbar-thumb').backgroundColor
+}));
+assert(!scrollbarIdle.active, 'scrollbar starts hidden at rest');
+assert(scrollbarIdle.color.includes('rgba(0, 0, 0, 0)') || scrollbarIdle.color.includes('transparent'),
+  `standards scrollbar thumb is transparent at rest (${scrollbarIdle.color})`);
+assert(scrollbarIdle.thumb === 'rgba(0, 0, 0, 0)',
+  `WebKit scrollbar thumb is transparent at rest (${scrollbarIdle.thumb})`);
+await page.evaluate(() => window.scrollTo(0, 100));
+await page.waitForFunction(() => document.documentElement.classList.contains('is-scrolling'));
+const scrollbarActive = await page.evaluate(() => ({
+  color: getComputedStyle(document.documentElement).scrollbarColor,
+  thumb: getComputedStyle(document.documentElement, '::-webkit-scrollbar-thumb').backgroundColor
+}));
+assert(scrollbarActive.color.includes('rgb('), `standards scrollbar appears during scrolling (${scrollbarActive.color})`);
+assert(scrollbarActive.thumb !== 'rgba(0, 0, 0, 0)',
+  `WebKit scrollbar appears during scrolling (${scrollbarActive.thumb})`);
+await page.waitForFunction(() => !document.documentElement.classList.contains('is-scrolling'), { timeout: 2500 });
+assert(true, 'scrollbar fades back to hidden after scrolling stops');
+
 assert(errors.length === 0, `no page errors (${errors.length ? errors.join('; ') : 'none'})`);
 
 await browser.close();
 server.kill();
 console.log(`\n=== ${pass} passed, ${fail} failed ===`);
 process.exit(fail ? 1 : 0);
-

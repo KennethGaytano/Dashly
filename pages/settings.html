@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <script>
+        try {
+            if (!localStorage.getItem('dashly_cloud_user_id')) document.documentElement.classList.add('cloud-locked');
+        } catch {
+            document.documentElement.classList.add('cloud-locked');
+        }
+    </script>
+    <script src="../scripts/theme.js"></script>
+    <title>Dashboard — Account settings</title>
+    <link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="../assets/icons/favicon-32.png" type="image/png" sizes="32x32">
+    <link rel="shortcut icon" href="../assets/icons/favicon.ico">
+    <link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+    <link rel="stylesheet" href="../styles/base.css">
+    <link rel="stylesheet" href="../styles/layout.css">
+    <link rel="stylesheet" href="../styles/components.css">
+    <link rel="stylesheet" href="../styles/cloud.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <header class="app-bar">
+        <img class="app-bar-logo" src="../assets/brand/dashly-logo.svg" alt="">
+        <span class="app-bar-title">Account settings</span>
+        <button type="button" class="theme-toggle theme-toggle--mobile" aria-label="Switch to light mode">
+            <span class="theme-toggle-icon" aria-hidden="true">☀</span>
+            <span class="theme-toggle-label">Light</span>
+        </button>
+    </header>
+
+    <button type="button" class="nav-scrim" tabindex="-1" aria-hidden="true"></button>
+
+    <aside id="sidebar">
+        <div class="sidebar-logo">
+            <h2><img class="brand-logo" src="../assets/brand/dashly-logo.svg" alt="Dashly"></h2>
+        </div>
+        <nav class="sidebar-nav" aria-label="Main">
+            <a href="../index.html"><span class="nav-icon" aria-hidden="true">🏠</span> Home</a>
+            <a href="tasks.html"><span class="nav-icon" aria-hidden="true">✅</span> Tasks</a>
+            <a href="calendar.html"><span class="nav-icon" aria-hidden="true">📅</span> Calendar</a>
+            <a href="notes.html"><span class="nav-icon" aria-hidden="true">📝</span> Notes</a>
+            <a href="progress.html"><span class="nav-icon" aria-hidden="true">📈</span> Progress</a>
+            <a href="goals.html"><span class="nav-icon" aria-hidden="true">🎯</span> Goals</a>
+            <a href="settings.html" class="active" aria-current="page"><span class="nav-icon" aria-hidden="true">⚙</span> Settings</a>
+        </nav>
+        <button type="button" class="theme-toggle theme-toggle--sidebar" aria-label="Switch to light mode">
+            <span class="theme-toggle-icon" aria-hidden="true">☀</span>
+            <span class="theme-toggle-label">Light</span>
+        </button>
+    </aside>
+
+    <main id="main-content">
+        <header>
+            <h1>Account settings</h1>
+            <p>Manage your profile, password, and account access.</p>
+        </header>
+        <div id="cloud-account-settings" aria-live="polite"></div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../scripts/supabase-config.js"></script>
+    <script src="../scripts/cloud.js"></script>
+    <script src="../scripts/nav.js"></script>
+    <nav class="tab-bar" aria-label="Primary">
+        <a href="../index.html" class="tab">
+            <span class="tab-icon" aria-hidden="true">🏠</span>
+            <span class="tab-label">Home</span>
+        </a>
+        <a href="tasks.html" class="tab">
+            <span class="tab-icon" aria-hidden="true">✅</span>
+            <span class="tab-label">Tasks</span>
+        </a>
+        <a href="calendar.html" class="tab">
+            <span class="tab-icon" aria-hidden="true">📅</span>
+            <span class="tab-label">Calendar</span>
+        </a>
+        <a href="notes.html" class="tab">
+            <span class="tab-icon" aria-hidden="true">📝</span>
+            <span class="tab-label">Notes</span>
+        </a>
+        <button type="button" class="tab tab-more is-active" aria-current="page" aria-controls="sidebar" aria-expanded="false" aria-label="More pages, including Progress, Goals, and Settings">
+            <span class="tab-icon" aria-hidden="true">⋯</span>
+            <span class="tab-label">More</span>
+        </button>
+    </nav>
+</body>
+</html>

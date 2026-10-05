@@ -14,6 +14,7 @@
   const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
   let lastFocused = null;
+  let scrollbarTimer = null;
 
   /** The More tab: the only control that opens the drawer. */
   function getToggle() {
@@ -64,6 +65,14 @@
     }
   }
 
+  function revealScrollbar() {
+    document.documentElement.classList.add('is-scrolling');
+    window.clearTimeout(scrollbarTimer);
+    scrollbarTimer = window.setTimeout(() => {
+      document.documentElement.classList.remove('is-scrolling');
+    }, 850);
+  }
+
   /**
    * Trap Tab inside the sidebar while it is open on mobile, so focus
    * cannot wander into the inert page behind it.
@@ -95,6 +104,8 @@
     const toggle = getToggle();
     const scrim = document.querySelector('.nav-scrim');
     const sidebar = getSidebar();
+
+    document.addEventListener('scroll', revealScrollbar, { capture: true, passive: true });
 
     if (toggle) {
       toggle.addEventListener('click', toggleNav);

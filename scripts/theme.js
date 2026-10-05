@@ -39,6 +39,7 @@
   function applyTheme(theme) {
     root.dataset.theme = theme;
     updateControls(theme);
+    document.dispatchEvent(new CustomEvent('dashly:theme-change', { detail: { theme } }));
   }
 
   function setTheme(theme) {

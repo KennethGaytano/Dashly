@@ -13,6 +13,10 @@
   };
   const USER_MARKER = 'dashly_cloud_user_id';
   const PENDING_KEY = 'dashly_cloud_pending_writes';
+  // Cached identity so the account row can be painted synchronously on the next
+  // page load. Without it the sidebar renders with a gap where the row belongs
+  // and the row pops in once the record fetch resolves.
+  const IDENTITY_KEY = 'dashly_cloud_identity';
   const originalGetItem = Storage.prototype.getItem;
   const originalSetItem = Storage.prototype.setItem;
   const originalRemoveItem = Storage.prototype.removeItem;
@@ -166,6 +170,20 @@
     if (root) root.remove();
     document.documentElement.classList.remove('cloud-locked');
   }
+
+  function accountIconPath(theme) {
+    const basePath = location.pathname.includes('/pages/') ? '../assets/icons/' : 'assets/icons/';
+    return basePath + (theme === 'light' ? 'account-icon.svg' : 'account-icon-dark.svg');
+  }
+
+  function updateAccountIcons() {
+    const source = accountIconPath(document.documentElement.dataset.theme);
+    document.querySelectorAll('.cloud-account-icon').forEach(icon => {
+      icon.src = source;
+    });
+  }
+
+  document.addEventListener('dashly:theme-change', updateAccountIcons);
 
   function getHomeUrl() {
     const homePath = location.pathname.includes('/pages/') ? '../index.html' : 'index.html';
@@ -622,7 +640,9 @@
       initialSync = true;
       hideAuth();
       listenForRemoteChanges();
-      addAccountControl(user);
+      cacheIdentity(user);
+      paintAccountControl({ id: user.id, username: currentUsername });
+      if (document.getElementById('cloud-account-settings')) showAccountSettings(user);
       if (previousUser === user.id) {
         Object.entries(readPendingWrites()).forEach(([collection, entry]) => {
           const key = STORAGE_KEYS[collection];
@@ -647,13 +667,21 @@
   }
 
   function showAccountSettings(user) {
-    const dialog = document.createElement('dialog');
-    dialog.className = 'cloud-settings-dialog';
-    dialog.setAttribute('aria-labelledby', 'cloud-settings-title');
-    dialog.innerHTML = [
+    const settings = document.getElementById('cloud-account-settings');
+    if (!settings) return;
+    settings.className = 'cloud-settings-page';
+    settings.setAttribute('aria-labelledby', 'cloud-settings-title');
+    // settings.innerHTML = [
+    //   The page already has an <h1>Account settings</h1> in its own header, so
+    //   repeating that title here produced two identical headings on screen. The
+    //   id stays on the visually hidden heading because the section is labelled
+    //   by it for screen readers; what is visible is the signed-in identity.
+    settings.innerHTML = [
       '<header class="cloud-settings-header">',
-      '<div><h2 id="cloud-settings-title">Account settings</h2><p>Update the profile details saved to your Dashly account.</p></div>',
-      '<button type="button" class="cloud-settings-close" aria-label="Close account settings">×</button>',
+      '<div class="cloud-settings-title-row">',
+      '<img class="cloud-account-icon" src="' + accountIconPath(document.documentElement.dataset.theme) + '" alt="" aria-hidden="true">',
+      '<div><h2 id="cloud-settings-title" class="cloud-settings-heading">Account settings</h2><p class="cloud-settings-email"></p><p>Update the profile details saved to your Dashly account.</p></div>',
+      '</div>',
       '</header>',
       '<form class="cloud-profile-form">',
       '<div class="cloud-profile-fields">',
@@ -662,12 +690,26 @@
       '</div>',
       '<div class="cloud-settings-username"><label for="cloud-settings-username">Username</label><input id="cloud-settings-username" name="username" type="text" autocomplete="username" autocapitalize="none" maxlength="32" required></div>',
       '<p class="cloud-settings-status" role="status" aria-live="polite"></p>',
-      '<button type="submit" class="btn btn-primary cloud-settings-save">Save name</button>',
+      '<button type="submit" class="btn btn-primary cloud-settings-save">Save profile</button>',
       '</form>',
+      '<section class="cloud-password-section" aria-labelledby="cloud-password-title">',
+      '<h3 id="cloud-password-title">Change password</h3>',
+      '<p>Confirm your current password, then choose a new one.</p>',
+      '<form class="cloud-password-form">',
+      '<label for="cloud-current-password">Current password</label>',
+      '<input id="cloud-current-password" name="currentPassword" type="password" autocomplete="current-password" required>',
+      '<label for="cloud-new-password">New password</label>',
+      '<input id="cloud-new-password" name="newPassword" type="password" autocomplete="new-password" minlength="8" required>',
+      '<label for="cloud-confirm-password">Confirm new password</label>',
+      '<input id="cloud-confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required>',
+      '<p class="cloud-password-status" role="status" aria-live="polite"></p>',
+      '<button type="submit" class="btn btn-primary cloud-password-save">Change password</button>',
+      '</form>',
+      '</section>',
       '<section class="cloud-settings-account" aria-labelledby="cloud-settings-switch-title">',
       '<h3 id="cloud-settings-switch-title">Use another account</h3>',
       '<p>Sign out to sign in with another account or create a new one. Your synced data stays with its account.</p>',
-      '<button type="button" class="btn btn-secondary cloud-settings-switch">Sign out to add or switch account</button>',
+      '<button type="button" class="btn btn-secondary cloud-settings-switch">Sign out</button>',
       '</section>',
       '<section class="cloud-settings-delete" aria-labelledby="cloud-settings-delete-title">',
       '<h3 id="cloud-settings-delete-title">Delete this account</h3>',
@@ -680,24 +722,28 @@
     ].join('');
 
     const metadata = user.user_metadata || {};
-    const firstName = dialog.querySelector('#cloud-settings-first-name');
-    const lastName = dialog.querySelector('#cloud-settings-last-name');
-    const username = dialog.querySelector('#cloud-settings-username');
-    const profileForm = dialog.querySelector('.cloud-profile-form');
-    const profileStatus = dialog.querySelector('.cloud-settings-status');
-    const saveButton = dialog.querySelector('.cloud-settings-save');
-    const deleteConfirmation = dialog.querySelector('#cloud-settings-delete-confirm');
-    const deleteStatus = dialog.querySelector('.cloud-settings-delete-status');
-    const deleteButton = dialog.querySelector('.cloud-settings-delete-button');
+    const firstName = settings.querySelector('#cloud-settings-first-name');
+    const lastName = settings.querySelector('#cloud-settings-last-name');
+    const username = settings.querySelector('#cloud-settings-username');
+    const profileForm = settings.querySelector('.cloud-profile-form');
+    const profileStatus = settings.querySelector('.cloud-settings-status');
+    const saveButton = settings.querySelector('.cloud-settings-save');
+    const passwordForm = settings.querySelector('.cloud-password-form');
+    const passwordStatus = settings.querySelector('.cloud-password-status');
+    const passwordSaveButton = settings.querySelector('.cloud-password-save');
+    const deleteConfirmation = settings.querySelector('#cloud-settings-delete-confirm');
+    const deleteStatus = settings.querySelector('.cloud-settings-delete-status');
+    const deleteButton = settings.querySelector('.cloud-settings-delete-button');
 
     firstName.value = typeof metadata.first_name === 'string' ? metadata.first_name : '';
     lastName.value = typeof metadata.last_name === 'string' ? metadata.last_name : '';
     username.value = typeof metadata.username === 'string' ? metadata.username : '';
 
-    dialog.querySelector('.cloud-settings-close').addEventListener('click', () => dialog.close());
-    dialog.addEventListener('click', event => {
-      if (event.target === dialog) dialog.close();
-    });
+    // The email is the one identifier the user cannot edit here, so it is shown
+    // in the header as plain text. textContent, not innerHTML: it is account
+    // data and must never be parsed as markup.
+    settings.querySelector('.cloud-settings-email').textContent = user.email || 'Signed in';
+
     profileForm.addEventListener('submit', async event => {
       event.preventDefault();
       saveButton.disabled = true;
@@ -728,6 +774,11 @@
         user = data.user;
         currentUsername = nextUsername;
         currentFirstName = nextFirstName;
+        const accountUsername = document.querySelector('#cloud-account-control .cloud-account-username');
+        if (accountUsername) accountUsername.textContent = nextUsername;
+        // Keep the cache in step, or the next page load paints the old name
+        // until the session resolves.
+        cacheIdentity({ id: user.id, user_metadata: { username: nextUsername } });
         if (previousUsername !== nextUsername) await backfillUsername(previousUsername);
         profileStatus.textContent = 'Name saved.';
       } catch (error) {
@@ -738,7 +789,52 @@
         saveButton.disabled = false;
       }
     });
-    dialog.querySelector('.cloud-settings-switch').addEventListener('click', async event => {
+    passwordForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      const currentPassword = settings.querySelector('#cloud-current-password').value;
+      const newPassword = settings.querySelector('#cloud-new-password').value;
+      const confirmPassword = settings.querySelector('#cloud-confirm-password').value;
+      if (newPassword.length < 8) {
+        passwordStatus.setAttribute('role', 'alert');
+        passwordStatus.textContent = 'Your new password must be at least 8 characters.';
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        passwordStatus.setAttribute('role', 'alert');
+        passwordStatus.textContent = 'The new passwords do not match.';
+        return;
+      }
+
+      passwordSaveButton.disabled = true;
+      passwordStatus.setAttribute('role', 'status');
+      passwordStatus.textContent = 'Verifying your current password…';
+      try {
+        const loginName = typeof user.user_metadata?.username === 'string' && user.user_metadata.username
+          ? user.user_metadata.username
+          : user.email;
+        if (!loginName) throw new Error('This account has no username or email to verify your current password.');
+        const { data, error } = await client.functions.invoke('sign-in-with-username', {
+          body: { username: loginName, password: currentPassword }
+        });
+        if (error) throw error;
+        if (!data?.session?.user || data.session.user.id !== user.id) {
+          throw new Error('The current password could not be verified for this account.');
+        }
+        const { error: sessionError } = await client.auth.setSession(data.session);
+        if (sessionError) throw sessionError;
+        const { error: updateError } = await client.auth.updateUser({ password: newPassword });
+        if (updateError) throw updateError;
+        passwordStatus.textContent = 'Password changed.';
+        passwordForm.reset();
+      } catch (error) {
+        console.error('Could not change the account password.', error);
+        passwordStatus.setAttribute('role', 'alert');
+        passwordStatus.textContent = error.message || 'Could not change your password. Check your current password and try again.';
+      } finally {
+        passwordSaveButton.disabled = false;
+      }
+    });
+    settings.querySelector('.cloud-settings-switch').addEventListener('click', async event => {
       const button = event.currentTarget;
       button.disabled = true;
       button.textContent = 'Signing out…';
@@ -750,7 +846,7 @@
         if (error) throw error;
       } catch (error) {
         button.disabled = false;
-        button.textContent = 'Sign out to add or switch account';
+        button.textContent = 'Sign out';
         console.error('Could not safely switch accounts.', error);
         profileStatus.setAttribute('role', 'alert');
         profileStatus.textContent = error.message || 'Could not sign out. Try again.';
@@ -781,27 +877,75 @@
       }
     });
 
-    document.body.appendChild(dialog);
-    dialog.addEventListener('close', () => dialog.remove(), { once: true });
-    dialog.showModal();
     firstName.focus();
   }
 
-  function addAccountControl(user) {
+  /* Render the account row from cached identity. Called twice: once synchronously
+     from the cache during boot, and again with the live user once the record
+     fetch resolves. Both passes go through here, and the second simply replaces
+     the first, so there is never a frame without the row. */
+  /* The account row must not blink out on every page switch. addAccountControl()
+     used to run only after the Supabase record fetch resolved, so the sidebar
+     rendered with an empty slot for a second or two on every navigation. This
+     caches just enough identity to paint the row synchronously at boot; the
+     live pass replaces it a moment later. */
+  function readCachedIdentity() {
+    try {
+      const raw = originalGetItem.call(localStorage, IDENTITY_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (!parsed || typeof parsed !== 'object') return null;
+      return {
+        id: typeof parsed.id === 'string' ? parsed.id : null,
+        username: typeof parsed.username === 'string' ? parsed.username : null
+      };
+    } catch (error) {
+      console.error('Could not read the cached account identity.', error);
+      return null;
+    }
+  }
+
+  function cacheIdentity(user) {
+    const metadata = (user && user.user_metadata) || {};
+    try {
+      originalSetItem.call(localStorage, IDENTITY_KEY, JSON.stringify({
+        id: user && user.id ? user.id : null,
+        username: typeof metadata.username === 'string' ? metadata.username : null
+      }));
+    } catch (error) {
+      console.error('Could not cache the account identity.', error);
+    }
+  }
+
+  function paintAccountControl(identity) {
     const existing = document.getElementById('cloud-account-control');
     if (existing) existing.remove();
     const control = document.createElement('div');
     control.id = 'cloud-account-control';
     control.className = 'cloud-account-control';
+    // Purely informational: the avatar and username identify the signed-in
+    // account and are not a target. Settings is reached from the sidebar nav,
+    // so there is deliberately no link here — and no tabindex either, because a
+    // non-interactive element should stay out of the tab order.
     control.innerHTML = [
-      '<span class="cloud-account-email"></span>',
+      '<span class="cloud-account-summary">',
+      '<img class="cloud-account-icon" src="' + accountIconPath(document.documentElement.dataset.theme) + '" alt="" aria-hidden="true">',
+      '<span class="cloud-account-username"></span>',
+      '</span>',
       '<div class="cloud-account-actions">',
-      '<button type="button" class="cloud-settings-open">Settings</button>',
       '<button type="button" class="cloud-signout">Sign out</button>',
       '</div>'
     ].join('');
-    control.querySelector('.cloud-account-email').textContent = user.email || 'Signed in';
-    control.querySelector('.cloud-settings-open').addEventListener('click', () => showAccountSettings(user));
+    const username = identity && identity.username;
+    // No aria-label here: the username text is the accessible content, and
+    // overriding it with a label would hide the name from screen readers.
+    control.querySelector('.cloud-account-username').textContent = username || 'Account';
+    if (!identity || identity.id !== currentUserId || !currentUserId) {
+      // Rendered from cache before the session is confirmed. The sign-out
+      // button is wired up regardless, but it stays disabled until the live
+      // session lands so an early click cannot sign out a client that is not
+      // connected yet.
+      control.querySelector('.cloud-signout').disabled = true;
+    }
     control.querySelector('.cloud-signout').addEventListener('click', async () => {
       const button = control.querySelector('.cloud-signout');
       button.disabled = true;
@@ -907,6 +1051,19 @@
     client = window.supabase.createClient(config.url, config.publishableKey, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
     });
+    // Paint the account row from cache before awaiting the session. This is the
+    // fix for the sidebar row vanishing on every page switch: the row is up in
+    // the first frame, then replaced in place when the live user arrives.
+    if (originalGetItem.call(localStorage, USER_MARKER)) {
+      const cached = readCachedIdentity();
+      // Paint even with no usable cache. USER_MARKER says a session existed on
+      // this device, so an empty slot in the sidebar is the worse outcome: the
+      // row would not appear until the record fetch resolved. If the session
+      // has actually expired, showAuth covers the sidebar with its own overlay,
+      // so a brief placeholder row never becomes visible.
+      paintAccountControl(cached && cached.id ? cached : { id: null, username: null });
+    }
+
     const { data, error } = await client.auth.getSession();
     if (error) throw error;
     if (data.session) await connectUser(data.session.user);
@@ -920,6 +1077,9 @@
           Object.values(STORAGE_KEYS).forEach(key => originalRemoveItem.call(localStorage, key));
           originalRemoveItem.call(localStorage, USER_MARKER);
           originalRemoveItem.call(localStorage, PENDING_KEY);
+          // Drop the cached identity too, or the next load would paint an
+          // account row for a session that no longer exists.
+          originalRemoveItem.call(localStorage, IDENTITY_KEY);
           location.reload();
         }, 0);
       } else if (event === 'SIGNED_IN' && session && !initialSync) {
