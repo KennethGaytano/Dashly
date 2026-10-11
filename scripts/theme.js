@@ -51,10 +51,11 @@
     }
   }
 
-  applyTheme(readTheme());
+  // Set initial theme immediately to prevent flicker
+  const initialTheme = readTheme();
+  applyTheme(initialTheme);
 
   function init() {
-    updateControls(root.dataset.theme);
     document.querySelectorAll('.theme-toggle').forEach((button) => {
       button.addEventListener('click', () => {
         setTheme(root.dataset.theme === 'light' ? 'dark' : 'light');
