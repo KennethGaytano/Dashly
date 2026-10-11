@@ -3,7 +3,7 @@
 **A personal productivity dashboard that puts tasks, calendar, notes, goals, focus sessions, and progress in one place.**  
 Sign in and your data follows you across devices; sign out and nothing is left behind.
 
-[**Try Dashly live →**](https://kennethgaytano.github.io/Dashly/)
+[**Try Dashly live →**](https://dashly-lilac.vercel.app/)
 
 ---
 
@@ -40,7 +40,7 @@ Dashly is a lightweight, offline-first dashboard for personal productivity. It r
 
 ## Get started
 
-1. Open [**Dashly**](https://kennethgaytano.github.io/Dashly/)
+1. Open [**Dashly**](https://dashly-lilac.vercel.app/)
 2. Click **Sign up**, then enter your first name, last name, username, email,
    and password.
 3. Start adding tasks, events, notes, and goals. Everything saves automatically.
