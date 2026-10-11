@@ -73,12 +73,12 @@
       .slice(0, 3);
 
     if (notes.length === 0) {
-      container.innerHTML = '<p class="empty-state">No notes yet. <a href="pages/notes.html?new=1">Create your first note</a></p>';
+      container.innerHTML = '<p class="empty-state">No notes yet. <a href="/pages/notes?new=1">Create your first note</a></p>';
       return;
     }
 
     container.innerHTML = notes.map(note => `
-      <a href="pages/notes.html" class="note-card">
+      <a href="/pages/notes" class="note-card">
         <div class="note-color-bar note-color-${escapeHtml(note.color)}" aria-hidden="true"></div>
         <h3>${escapeHtml(note.title)}</h3>
         <p>${escapeHtml(note.body || '')}</p>

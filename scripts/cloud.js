@@ -186,13 +186,14 @@
   document.addEventListener('dashly:theme-change', updateAccountIcons);
 
   function getHomeUrl() {
-    const homePath = location.pathname.includes('/pages/') ? '../index.html' : 'index.html';
-    return new URL(homePath, location.href).href;
+    // cleanUrls: the site root is "/" at every depth, so the depth check the
+    // relative path used to need is gone.
+    return new URL('/', location.origin).href;
   }
 
   async function finishSignIn(user) {
     const params = new URLSearchParams(location.search);
-    const destination = location.pathname.endsWith('/pages/notes.html') && params.get('new') === '1'
+    const destination = location.pathname.endsWith('/pages/notes') && params.get('new') === '1'
       ? location.href
       : getHomeUrl();
     await connectUser(user);

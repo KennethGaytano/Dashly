@@ -105,7 +105,7 @@
     if (!container) return;
     const raw = readStorage(STORAGE_GOALS);
     if (!raw || !Array.isArray(raw) || raw.length === 0) {
-      container.innerHTML = '<p class="empty-state"><span class="empty-icon" aria-hidden="true">🎯</span> No goals yet. <a href="goals.html" class="section-link">Create a goal to see its progress here.</a></p>';
+      container.innerHTML = '<p class="empty-state"><span class="empty-icon" aria-hidden="true">🎯</span> No goals yet. <a href="/pages/goals" class="section-link">Create a goal to see its progress here.</a></p>';
       document.getElementById('goalsSummary').textContent = '';
       return;
     }

@@ -132,7 +132,7 @@
       .sort(compareTaskDeadlines);
 
     if (displayTasks.length === 0) {
-      container.innerHTML = '<p class="empty-state">Nothing due today. <a class="section-link" href="pages/tasks.html">View all tasks</a></p>';
+      container.innerHTML = '<p class="empty-state">Nothing due today. <a class="section-link" href="/pages/tasks">View all tasks</a></p>';
       return;
     }
 
@@ -356,7 +356,7 @@
    * Sync the home page Streak stat to the derived progress-module value
    */
   function updateStreak() {
-    const streakEl = document.getElementById('homeStreak') || document.querySelector('.stat-card a[href="pages/progress.html"] .stat-value');
+    const streakEl = document.getElementById('homeStreak') || document.querySelector('.stat-card a[href="/pages/progress"] .stat-value');
     if (!streakEl) return;
     try {
       // Derive from progress module's computeStats logic (no dependency, mirror formula)
