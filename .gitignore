@@ -49,3 +49,17 @@ Desktop.ini
 
 # Unexpanded env vars that created stray Windows cache folders
 %SystemDrive%/
+
+# ===== Local-only tooling (not part of the deployed website) =====
+# Scratch directory used for temporary git bookkeeping
+.tmpgit/
+
+# AI assistant configuration and the local test harness that drives the app
+.claude/
+
+# Browser inspector dumps (dev artifacts, not source)
+Attached Element Context*.txt
+
+# Project notes for AI assistants
+AGENTS.md
+CLAUDE.md
